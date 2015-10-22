@@ -1,4 +1,4 @@
-package com.github.steam.api;
+package com.github.steam.api.http;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
@@ -21,9 +21,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Helper for making HTTP request
+ * @author Andrey Marchenkov
+ */
 public class HttpHelper {
-
-    private static final Log LOG = LogFactory.getLog(HttpHelper.class);
 
     /**
      * GET - запрос к API

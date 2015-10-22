@@ -1,17 +1,18 @@
 package com.github.steam.api.model;
 
-import com.github.steam.api.HttpHelper;
+import com.github.steam.api.http.HttpHelper;
 import com.github.steam.api.common.CEconTradeOffer;
 import com.github.steam.api.exception.SteamApiException;
+import com.github.steam.api.http.HttpMethod;
 import com.google.gson.Gson;
 import org.apache.http.client.utils.URIBuilder;
 
 import java.io.IOException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 
 /**
  * Unofficial SDK for Steam Trade API.
@@ -30,7 +31,7 @@ public class SteamTrade {
     }
 
     public List<CEconTradeOffer> getTradeOffers(boolean getSentOffers, boolean getReceivedOffers) throws SteamApiException {
-        String result = doAPICall("GetTradeOffers/v1", new HashMap<>(), true);
+        String result = doAPICall("GetTradeOffers/v1", new HashMap<>(), HttpMethod.POST);
         return null;
     }
 
@@ -39,40 +40,40 @@ public class SteamTrade {
     }
 
     /**
-     * Получить детальную информацию о выбранном предложении обмена
-     * @param tradeOfferID Идентификатор предложения обмена
-     * @param language Язык
+     * РџРѕР»СѓС‡РёС‚СЊ РґРµС‚Р°Р»СЊРЅСѓСЋ РёРЅС„РѕСЂРјР°С†РёСЋ Рѕ РІС‹Р±СЂР°РЅРЅРѕРј РїСЂРµРґР»РѕР¶РµРЅРёРё РѕР±РјРµРЅР°
+     * @param tradeOfferID РРґРµРЅС‚РёС„РёРєР°С‚РѕСЂ РїСЂРµРґР»РѕР¶РµРЅРёСЏ РѕР±РјРµРЅР°
+     * @param language РЇР·С‹Рє
      * @return CEconTradeOffer
      */
     public CEconTradeOffer getTradeOffer(String tradeOfferID, String language) throws SteamApiException {
         Map<String, String> params = new HashMap<>();
         params.put("tradeofferid", tradeOfferID);
         params.put("language", language);
-        String result = doAPICall("GetTradeOffer/v1", params, false);
+        String result = doAPICall("GetTradeOffer/v1", params, HttpMethod.POST);
         Gson gson = new Gson();
         return gson.fromJson(result, CEconTradeOffer.class);
     }
 
     /**
-     * Отклонить входящее предложение обмена
-     * @param tradeOfferID Идентификатор предложения обмена
+     * РћС‚РєР»РѕРЅРёС‚СЊ РІС…РѕРґСЏС‰РµРµ РїСЂРµРґР»РѕР¶РµРЅРёРµ РѕР±РјРµРЅР°
+     * @param tradeOfferID РРґРµРЅС‚РёС„РёРєР°С‚РѕСЂ РїСЂРµРґР»РѕР¶РµРЅРёСЏ РѕР±РјРµРЅР°
      * @throws SteamApiException
      */
     public void declineTradeOffer(String tradeOfferID) throws SteamApiException {
         Map<String, String> params = new HashMap<>();
         params.put("tradeofferid", tradeOfferID);
-        String result = doAPICall("DeclineTradeOffer/v1", params, true);
+        String result = doAPICall("DeclineTradeOffer/v1", params, HttpMethod.GET);
     }
 
     /**
-     * Отменить исходящее предложение обмена
-     * @param tradeOfferID Идентификатор предложения обмена
+     * РћС‚РјРµРЅРёС‚СЊ РёСЃС…РѕРґСЏС‰РµРµ РїСЂРµРґР»РѕР¶РµРЅРёРµ РѕР±РјРµРЅР°
+     * @param tradeOfferID РРґРµРЅС‚РёС„РёРєР°С‚РѕСЂ РїСЂРµРґР»РѕР¶РµРЅРёСЏ РѕР±РјРµРЅР°
      * @throws SteamApiException
      */
     public void cancelTradeOffer(String tradeOfferID) throws SteamApiException {
         Map<String, String> params = new HashMap<>();
         params.put("tradeofferid", tradeOfferID);
-        String result = doAPICall("CancelTradeOffer/v1", params, true);
+        String result = doAPICall("CancelTradeOffer/v1", params, HttpMethod.GET);
     }
 
     public void acceptOffer() {
@@ -100,41 +101,36 @@ public class SteamTrade {
     }
 
     /**
-     * Выполнить HTTP-запрос к официальному SteamWebAPI
-     * @param method Вызываемый в API метод
-     * @param params Параметры запроса в виде карты "параметр" => "значение"
-     * @param isHttpPost POST или GET запрос
+     * Р’С‹РїРѕР»РЅРёС‚СЊ HTTP-Р·Р°РїСЂРѕСЃ Рє РѕС„РёС†РёР°Р»СЊРЅРѕРјСѓ SteamWebAPI
+     * @param method Р’С‹Р·С‹РІР°РµРјС‹Р№ РІ API РјРµС‚РѕРґ
+     * @param params РџР°СЂР°РјРµС‚СЂС‹ Р·Р°РїСЂРѕСЃР° РІ РІРёРґРµ РєР°СЂС‚С‹ "РїР°СЂР°РјРµС‚СЂ" => "Р·РЅР°С‡РµРЅРёРµ"
+     * @param httpMethod POST РёР»Рё GET Р·Р°РїСЂРѕСЃ
      */
-    private String doAPICall(String method, Map<String, String> params, boolean isHttpPost) throws SteamApiException {
-        if (isHttpPost) {
-            try {
-                URIBuilder builder = new URIBuilder(apiUrl + method);
-                builder.setParameter("key", this.webApiKey);
-                builder.setParameter("format", "json");
-                try {
-                    return helper.sendPost(builder.build(), params);
-                } catch (IOException e) {
-                    throw new SteamApiException("Requset exception", e);
-                }
-            } catch (URISyntaxException e) {
-                throw new SteamApiException("Invalid method", e);
+    private String doAPICall(String method, Map<String, String> params, HttpMethod httpMethod) throws SteamApiException {
+        URIBuilder builder;
+        URI uri;
+        try {
+            builder = new URIBuilder(apiUrl + method);
+            builder.setParameter("key", this.webApiKey);
+            builder.setParameter("format", "json");
+            uri = builder.build();
+        } catch (URISyntaxException e) {
+            throw new SteamApiException("Invalid api URI", e);
+        }
+        try {
+            switch (httpMethod) {
+                case GET:
+                    return helper.sendPost(uri, params);
+                case POST:
+                    for(Map.Entry<String, String> param : params.entrySet()) {
+                        builder.setParameter(param.getKey(), param.getValue());
+                    }
+                    return helper.sendGet(uri);
+                default:
+                    throw new IllegalStateException("Undefined http method");
             }
-        } else {
-            try {
-                URIBuilder builder = new URIBuilder(apiUrl + method);
-                builder.setParameter("key", this.webApiKey);
-                builder.setParameter("format", "json");
-                for(Map.Entry<String, String> param : params.entrySet()) {
-                    builder.setParameter(param.getKey(), param.getValue());
-                }
-                try {
-                    return helper.sendGet(builder.build());
-                } catch (IOException e) {
-                    throw new SteamApiException("Requset exception", e);
-                }
-            } catch (URISyntaxException e) {
-                throw new SteamApiException("Invalid method", e);
-            }
+        } catch (IOException e) {
+            throw new SteamApiException("Requset exception", e);
         }
     }
 

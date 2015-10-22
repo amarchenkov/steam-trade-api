@@ -1,5 +1,7 @@
 package com.github.steam.api.common;
 
+import java.util.Arrays;
+
 public class CEconTradeOffer {
 
     private String tradeofferid;
@@ -117,5 +119,22 @@ public class CEconTradeOffer {
 
     public void setFrom_real_time_trade(boolean from_real_time_trade) {
         this.from_real_time_trade = from_real_time_trade;
+    }
+
+    @Override
+    public String toString() {
+        return "CEconTradeOffer{" +
+                "tradeofferid='" + tradeofferid + '\'' +
+                ", accountid_other='" + accountid_other + '\'' +
+                ", message='" + message + '\'' +
+                ", expiration_time=" + expiration_time +
+                ", trade_offer_state=" + trade_offer_state +
+                ", items_to_give=" + Arrays.toString(items_to_give) +
+                ", items_to_receive=" + Arrays.toString(items_to_receive) +
+                ", is_our_offer=" + is_our_offer +
+                ", time_created=" + time_created +
+                ", time_updated=" + time_updated +
+                ", from_real_time_trade=" + from_real_time_trade +
+                '}';
     }
 }

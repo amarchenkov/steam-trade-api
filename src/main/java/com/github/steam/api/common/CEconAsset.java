@@ -88,4 +88,18 @@ public class CEconAsset {
     public void setMissing(boolean missing) {
         this.missing = missing;
     }
+
+    @Override
+    public String toString() {
+        return "CEconAsset{" +
+                "appid='" + appid + '\'' +
+                ", contextid='" + contextid + '\'' +
+                ", assetid='" + assetid + '\'' +
+                ", currencyid='" + currencyid + '\'' +
+                ", classid='" + classid + '\'' +
+                ", instanceid='" + instanceid + '\'' +
+                ", amount=" + amount +
+                ", missing=" + missing +
+                '}';
+    }
 }
