@@ -15,6 +15,7 @@ public enum ETradeOfferState {
     ;
 
     private int value;
+
     private String  comment;
 
     ETradeOfferState(int value, String comment) {
