@@ -1,10 +1,13 @@
 package com.github.steam.api.model;
 
+import com.github.steam.api.common.ETradeOfferState;
 import com.github.steam.api.http.HttpHelper;
 import com.github.steam.api.common.CEconTradeOffer;
 import com.github.steam.api.exception.SteamApiException;
 import com.github.steam.api.http.HttpMethod;
+import com.github.steam.api.model.adapter.ETradeOfferStateAdapter;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import org.apache.http.client.utils.URIBuilder;
 
 import java.io.IOException;
@@ -20,18 +23,21 @@ import java.util.Map;
  */
 public class SteamTrade {
 
-    private static final String communityUrl = "https://steamcommunity.com";
-    private static final String apiUrl = "https://api.steampowered.com/IEconService/";
-    private static final HttpHelper helper = new HttpHelper();
+    protected static final String communityUrl = "https://steamcommunity.com";
+    protected static final String apiUrl = "https://api.steampowered.com/IEconService/";
+    protected static final HttpHelper helper = new HttpHelper();
+    protected Gson gson;
 
     private String webApiKey;
 
     public SteamTrade(String webApiKey) {
         this.webApiKey = webApiKey;
+        GsonBuilder gsonBuilder = new GsonBuilder();
+        gsonBuilder.registerTypeAdapter(ETradeOfferState.class, new ETradeOfferStateAdapter());
+        this.gson = gsonBuilder.create();
     }
 
     public List<CEconTradeOffer> getTradeOffers(boolean getSentOffers, boolean getReceivedOffers) throws SteamApiException {
-        String result = doAPICall("GetTradeOffers/v1", new HashMap<>(), HttpMethod.POST);
         return null;
     }
 
@@ -49,8 +55,7 @@ public class SteamTrade {
         Map<String, String> params = new HashMap<>();
         params.put("tradeofferid", tradeOfferID);
         params.put("language", language);
-        String result = doAPICall("GetTradeOffer/v1", params, HttpMethod.POST);
-        Gson gson = new Gson();
+        String result = doAPICall("GetTradeOffer/v1", params, HttpMethod.GET);
         return gson.fromJson(result, CEconTradeOffer.class);
     }
 
@@ -62,7 +67,7 @@ public class SteamTrade {
     public void declineTradeOffer(String tradeOfferID) throws SteamApiException {
         Map<String, String> params = new HashMap<>();
         params.put("tradeofferid", tradeOfferID);
-        String result = doAPICall("DeclineTradeOffer/v1", params, HttpMethod.GET);
+        String result = doAPICall("DeclineTradeOffer/v1", params, HttpMethod.POST);
     }
 
     /**
@@ -73,7 +78,7 @@ public class SteamTrade {
     public void cancelTradeOffer(String tradeOfferID) throws SteamApiException {
         Map<String, String> params = new HashMap<>();
         params.put("tradeofferid", tradeOfferID);
-        String result = doAPICall("CancelTradeOffer/v1", params, HttpMethod.GET);
+        String result = doAPICall("CancelTradeOffer/v1", params, HttpMethod.POST);
     }
 
     public void acceptOffer() {
@@ -101,6 +106,7 @@ public class SteamTrade {
     }
 
     /**
+     * //TODO Сделать один общий try
      * Выполнить HTTP-запрос к официальному SteamWebAPI
      * @param method Вызываемый в API метод
      * @param params Параметры запроса в виде карты "параметр" => "значение"
@@ -120,7 +126,7 @@ public class SteamTrade {
         try {
             switch (httpMethod) {
                 case GET:
-                    return helper.sendPost(uri, params);
+                    return helper.sendGet(uri);
                 case POST:
                     for(Map.Entry<String, String> param : params.entrySet()) {
                         builder.setParameter(param.getKey(), param.getValue());

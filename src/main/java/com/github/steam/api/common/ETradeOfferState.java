@@ -30,4 +30,13 @@ public enum ETradeOfferState {
     public String getComment() {
         return comment;
     }
+
+    public static ETradeOfferState valueOf(int value) {
+        for (ETradeOfferState state: ETradeOfferState.values()) {
+            if (state.getValue() == value) {
+                return state;
+            }
+        }
+        return null;
+    }
 }
