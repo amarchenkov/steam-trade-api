@@ -2,18 +2,43 @@ package com.github.steam.api.common;
 
 import java.util.Arrays;
 
+/**
+ * Both GetTradeOffers and GetTradeOffer return this structure
+ * @author Andrey Marchenkov
+ */
 public class CEconTradeOffer {
 
+    /** A unique identifier for the trade offer */
     private String tradeofferid;
+
+    /** Your partner in the trade offer */
     private String accountid_other;
+
+    /** A message included by the creator of the trade offer */
     private String message;
+
+    /** UNIX time when the offer will expire (or expired, if it is in the past) */
     private long expiration_time;
+
+    /** @see ETradeOfferState above */
     private ETradeOfferState trade_offer_state;
+
+    /** Array of CEcon_Asset, items you will give up in the trade (regardless of who created the offer) */
     private CEconAsset[] items_to_give;
+
+    /** Array of CEcon_Asset, items you will receive in the trade (regardless of who created the offer)*/
     private CEconAsset[] items_to_receive;
+
+    /** Boolean to indicate this is an offer you created */
     private boolean is_our_offer;
+
+    /** UNIX timestamp of the time the offer was sent */
     private long time_created;
+
+    /** UNIX timestamp of the time the trade_offer_state last changed */
     private long time_updated;
+
+    /** Boolean to indicate this is an offer automatically created from a real-time trade */
     private boolean from_real_time_trade;
 
     public CEconTradeOffer(String tradeofferid, String accountid_other, String message, long expiration_time, ETradeOfferState trade_offer_state, CEconAsset[] items_to_give, CEconAsset[] items_to_receive, boolean is_our_offer, long time_created, long time_updated, boolean from_real_time_trade) {
@@ -33,19 +58,19 @@ public class CEconTradeOffer {
     public CEconTradeOffer() {
     }
 
-    public String getTradeofferid() {
+    public String getTradeOfferID() {
         return tradeofferid;
     }
 
-    public void setTradeofferid(String tradeofferid) {
+    public void setTradeOfferID(String tradeofferid) {
         this.tradeofferid = tradeofferid;
     }
 
-    public String getAccountid_other() {
+    public String getAccountIDOther() {
         return accountid_other;
     }
 
-    public void setAccountid_other(String accountid_other) {
+    public void setAccountIDOther(String accountid_other) {
         this.accountid_other = accountid_other;
     }
 
@@ -57,67 +82,67 @@ public class CEconTradeOffer {
         this.message = message;
     }
 
-    public long getExpiration_time() {
+    public long getExpirationTime() {
         return expiration_time;
     }
 
-    public void setExpiration_time(long expiration_time) {
+    public void setExpirationTime(long expiration_time) {
         this.expiration_time = expiration_time;
     }
 
-    public ETradeOfferState getTrade_offer_state() {
+    public ETradeOfferState getTradeOfferState() {
         return trade_offer_state;
     }
 
-    public void setTrade_offer_state(ETradeOfferState trade_offer_state) {
+    public void setTradeOfferState(ETradeOfferState trade_offer_state) {
         this.trade_offer_state = trade_offer_state;
     }
 
-    public CEconAsset[] getItems_to_give() {
+    public CEconAsset[] getItemsToGive() {
         return items_to_give;
     }
 
-    public void setItems_to_give(CEconAsset[] items_to_give) {
+    public void setItemsToGive(CEconAsset[] items_to_give) {
         this.items_to_give = items_to_give;
     }
 
-    public CEconAsset[] getItems_to_receive() {
+    public CEconAsset[] getItemsToReceive() {
         return items_to_receive;
     }
 
-    public void setItems_to_receive(CEconAsset[] items_to_receive) {
+    public void setItemsToReceive(CEconAsset[] items_to_receive) {
         this.items_to_receive = items_to_receive;
     }
 
-    public boolean is_our_offer() {
+    public boolean isOurOffer() {
         return is_our_offer;
     }
 
-    public void setIs_our_offer(boolean is_our_offer) {
+    public void setIsOurOffer(boolean is_our_offer) {
         this.is_our_offer = is_our_offer;
     }
 
-    public long getTime_created() {
+    public long getTimeCreated() {
         return time_created;
     }
 
-    public void setTime_created(long time_created) {
+    public void setTimeCreated(long time_created) {
         this.time_created = time_created;
     }
 
-    public long getTime_updated() {
+    public long getTimeUpdated() {
         return time_updated;
     }
 
-    public void setTime_updated(long time_updated) {
+    public void setTimeUpdated(long time_updated) {
         this.time_updated = time_updated;
     }
 
-    public boolean isFrom_real_time_trade() {
+    public boolean isFromRealTimeTrade() {
         return from_real_time_trade;
     }
 
-    public void setFrom_real_time_trade(boolean from_real_time_trade) {
+    public void setFromRealTimeTrade(boolean from_real_time_trade) {
         this.from_real_time_trade = from_real_time_trade;
     }
 

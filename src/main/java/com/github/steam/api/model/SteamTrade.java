@@ -32,9 +32,9 @@ public class SteamTrade {
 
     public SteamTrade(String webApiKey) {
         this.webApiKey = webApiKey;
-        GsonBuilder gsonBuilder = new GsonBuilder();
-        gsonBuilder.registerTypeAdapter(ETradeOfferState.class, new ETradeOfferStateAdapter());
-        this.gson = gsonBuilder.create();
+        this.gson = new GsonBuilder()
+                .registerTypeAdapter(ETradeOfferState.class, new ETradeOfferStateAdapter())
+                .create();
     }
 
     public List<CEconTradeOffer> getTradeOffers(boolean getSentOffers, boolean getReceivedOffers) throws SteamApiException {
@@ -106,37 +106,31 @@ public class SteamTrade {
     }
 
     /**
-     * //TODO Сделать один общий try
      * Выполнить HTTP-запрос к официальному SteamWebAPI
      * @param method Вызываемый в API метод
      * @param params Параметры запроса в виде карты "параметр" => "значение"
      * @param httpMethod POST или GET запрос
      */
     private String doAPICall(String method, Map<String, String> params, HttpMethod httpMethod) throws SteamApiException {
-        URIBuilder builder;
-        URI uri;
         try {
-            builder = new URIBuilder(apiUrl + method);
+            URIBuilder builder = new URIBuilder(apiUrl + method);
             builder.setParameter("key", this.webApiKey);
             builder.setParameter("format", "json");
-            uri = builder.build();
-        } catch (URISyntaxException e) {
-            throw new SteamApiException("Invalid api URI", e);
-        }
-        try {
             switch (httpMethod) {
                 case GET:
-                    return helper.sendGet(uri);
-                case POST:
                     for(Map.Entry<String, String> param : params.entrySet()) {
                         builder.setParameter(param.getKey(), param.getValue());
                     }
-                    return helper.sendGet(uri);
+                    return helper.sendGet(builder.build());
+                case POST:
+                    return helper.sendPost(builder.build(), params);
                 default:
                     throw new IllegalStateException("Undefined http method");
             }
+        } catch (URISyntaxException e) {
+            throw new SteamApiException("Invalid API URI", e);
         } catch (IOException e) {
-            throw new SteamApiException("Requset exception", e);
+            throw new SteamApiException("HTTP Requset exception", e);
         }
     }
 

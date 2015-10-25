@@ -1,14 +1,30 @@
 package com.github.steam.api.common;
 
+/**
+ * Description of item you will give up in the trade (regardless of who created the offer)
+ * @author Andrey Marchenkov
+ */
 public class CEconAsset {
 
     private String appid;
     private String contextid;
+
+    /** either assetid or currencyid will be set */
     private String assetid;
+
+    /** either assetid or currencyid will be set */
     private String  currencyid;
+
+    /** together with instanceid, uniquely identifies the display of the item */
     private String classid;
+
+    /** together with classid, uniquely identifies the display of the item */
     private String instanceid;
+
+    /** the amount offered in the trade, for stackable items and currency */
     private float amount;
+
+    /** a boolean that indicates the item is no longer present in the user's inventory */
     private boolean missing;
 
     public CEconAsset() {

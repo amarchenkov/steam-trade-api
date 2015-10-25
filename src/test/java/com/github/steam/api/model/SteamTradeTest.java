@@ -1,4 +1,4 @@
-package model;
+package com.github.steam.api.model;
 
 import com.github.steam.api.common.CEconTradeOffer;
 import com.github.steam.api.common.ETradeOfferState;

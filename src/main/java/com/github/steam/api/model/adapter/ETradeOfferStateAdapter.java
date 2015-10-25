@@ -9,13 +9,15 @@ import com.google.gson.JsonParseException;
 import java.lang.reflect.Type;
 
 /**
- * Преобразователь статуса из числового значения в элемент перечисления
+ * РџСЂРµРѕР±СЂР°Р·РѕРІР°С‚РµР»СЊ С‡РёСЃС‚Р»РѕРІРѕРіРѕ СЃС‚Р°С‚СѓСЃР° РІ СЌР»РµРјРµРЅС‚ РїРµСЂРµС‡РёСЃР»РµРЅРёСЏ ETradeOfferState
  * @author Andrey Marchenkov
  */
 public class ETradeOfferStateAdapter implements JsonDeserializer<ETradeOfferState> {
+
     @Override
     public ETradeOfferState deserialize(JsonElement element, Type arg1, JsonDeserializationContext arg2) throws JsonParseException {
         int key = element.getAsInt();
         return ETradeOfferState.valueOf(key);
     }
+
 }

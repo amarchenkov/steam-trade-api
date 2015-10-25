@@ -28,9 +28,9 @@ import java.util.Map;
 public class HttpHelper {
 
     /**
-     * GET - запрос к API
-     * @param uri Идентификатор ресурса
-     * @return Текст ответа
+     * GET - Р·Р°РїСЂРѕСЃ Рє API
+     * @param uri РРґРµРЅС‚РёС„РёРєР°С‚РѕСЂ СЂРµСЃСѓСЂСЃР°
+     * @return РўРµРєСЃС‚ РѕС‚РІРµС‚Р°
      * @throws IOException
      */
     public String sendGet(URI uri) throws IOException {
@@ -46,10 +46,10 @@ public class HttpHelper {
     }
 
     /**
-     * POST - запрос к API
-     * @param uri Идентификатор ресурса
-     * @param params Параметры тела запроса
-     * @return Текст ответа
+     * POST - Р·Р°РїСЂРѕСЃ Рє API
+     * @param uri РРґРµРЅС‚РёС„РёРєР°С‚РѕСЂ СЂРµСЃСѓСЂСЃР°
+     * @param params РџР°СЂР°РјРµС‚СЂС‹ С‚РµР»Р° Р·Р°РїСЂРѕСЃР°
+     * @return РўРµРєСЃС‚ РѕС‚РІРµС‚Р°
      * @throws IOException
      */
     public String sendPost(URI uri, Map<String, String> params) throws IOException {
