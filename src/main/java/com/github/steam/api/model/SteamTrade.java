@@ -1,9 +1,9 @@
 package com.github.steam.api.model;
 
-import com.github.steam.api.common.ETradeOfferState;
-import com.github.steam.api.http.HttpHelper;
 import com.github.steam.api.common.CEconTradeOffer;
+import com.github.steam.api.common.ETradeOfferState;
 import com.github.steam.api.exception.SteamApiException;
+import com.github.steam.api.http.HttpHelper;
 import com.github.steam.api.http.HttpMethod;
 import com.github.steam.api.model.adapter.ETradeOfferStateAdapter;
 import com.google.gson.Gson;
@@ -11,7 +11,6 @@ import com.google.gson.GsonBuilder;
 import org.apache.http.client.utils.URIBuilder;
 
 import java.io.IOException;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.List;
@@ -23,14 +22,30 @@ import java.util.Map;
  */
 public class SteamTrade {
 
+    /** URL for community site */
     protected static final String communityUrl = "https://steamcommunity.com";
+
+    /** URL for official API */
     protected static final String apiUrl = "https://api.steampowered.com/IEconService/";
+
+    /** Helper for making http requests*/
     protected static final HttpHelper helper = new HttpHelper();
+
+    /** Object for JSON mapping */
     protected Gson gson;
 
+    /** Steam Web API key */
     private String webApiKey;
 
+    /** Code from Steam Guard */
+    private String authCode;
+
     public SteamTrade(String webApiKey) {
+        this(webApiKey, null);
+    }
+
+    public SteamTrade(String webApiKey, String authCode) {
+        this.authCode = authCode;
         this.webApiKey = webApiKey;
         this.gson = new GsonBuilder()
                 .registerTypeAdapter(ETradeOfferState.class, new ETradeOfferStateAdapter())
