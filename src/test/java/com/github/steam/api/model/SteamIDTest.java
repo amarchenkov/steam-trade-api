@@ -2,12 +2,13 @@ package com.github.steam.api.model;
 
 import org.junit.Test;
 
+import static junit.framework.Assert.assertEquals;
+
 public class SteamIDTest {
 
     @Test
     public void testValueOf() {
-//        SteamID steamID = SteamID.valueOf(76561198010004566L);
-//        String a = steamID.toString();
-        int s = (int) ((9L >> 2));
+        SteamID steamID = new SteamID(76561198010004566L);
+        assertEquals(Long.toString(76561198010004566L), steamID.toString());
     }
 }
