@@ -2,13 +2,15 @@ package com.github.steam.api.model;
 
 import org.junit.Test;
 
-import static junit.framework.Assert.assertEquals;
+import static org.junit.Assert.assertEquals;
 
 public class SteamIDTest {
 
     @Test
-    public void testValueOf() {
+    public void testSteamID() {
         SteamID steamID = new SteamID(76561198010004566L);
-        assertEquals(Long.toString(76561198010004566L), steamID.toString());
+        assertEquals(49738838L, steamID.getAccountId());
+        assertEquals(76561198010004566L, steamID.getCommunityId());
+        assertEquals("STEAM_0:0:24869419", steamID.render());
     }
 }

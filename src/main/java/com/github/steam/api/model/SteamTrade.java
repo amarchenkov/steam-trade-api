@@ -23,7 +23,7 @@ import java.util.Map;
 public class SteamTrade {
 
     /** URL for community site */
-    protected static final String communityUrl = "https://steamcommunity.com";
+    protected static final String communityUrl = "https://steamcommunity.com/";
 
     /** URL for official API */
     protected static final String apiUrl = "https://api.steampowered.com/IEconService/";
