@@ -25,6 +25,8 @@ public class SteamID {
     public String toString() {
         return "SteamID{" +
                 "communityId=" + communityId +
+                ",accountId=" + this.getAccountId() +
+                ",textPresentation=" + this.render() +
                 '}';
     }
 }

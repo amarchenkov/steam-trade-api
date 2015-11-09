@@ -1,156 +1,296 @@
 package com.github.steam.api.model;
 
-import com.github.steam.api.common.CEconTradeOffer;
-import com.github.steam.api.common.ETradeOfferState;
 import com.github.steam.api.exception.SteamApiException;
-import com.github.steam.api.http.HttpHelper;
 import com.github.steam.api.http.HttpMethod;
-import com.github.steam.api.model.adapter.ETradeOfferStateAdapter;
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import org.apache.http.client.utils.URIBuilder;
+import com.google.gson.reflect.TypeToken;
+import org.apache.http.NameValuePair;
+import org.apache.http.message.BasicNameValuePair;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-/**
- * Unofficial SDK for Steam Trade API.
- * @author Andrey Marchenkov
- */
 public class SteamTrade {
 
-    /** URL for community site */
-    protected static final String communityUrl = "https://steamcommunity.com/";
-
-    /** URL for official API */
-    protected static final String apiUrl = "https://api.steampowered.com/IEconService/";
-
-    /** Helper for making http requests*/
-    protected static final HttpHelper helper = new HttpHelper();
-
-    /** Object for JSON mapping */
-    protected Gson gson;
-
-    /** Steam Web API key */
-    private String webApiKey;
-
-    /** Code from Steam Guard */
-    private String authCode;
-
-    public SteamTrade(String webApiKey) {
-        this(webApiKey, null);
-    }
-
-    public SteamTrade(String webApiKey, String authCode) {
-        this.authCode = authCode;
-        this.webApiKey = webApiKey;
-        this.gson = new GsonBuilder()
-                .registerTypeAdapter(ETradeOfferState.class, new ETradeOfferStateAdapter())
-                .create();
-    }
-
-    public List<CEconTradeOffer> getTradeOffers(boolean getSentOffers, boolean getReceivedOffers) throws SteamApiException {
-        return null;
-    }
-
-    public List<CEconTradeOffer> getTradeOffers(boolean getSentOffers, boolean getReceivedOffers, boolean activeOnly) {
-        return null;
-    }
+    private SteamUser user;
+    private String sessionId;
+    private String partnerName;
+    private SteamID partner;
+    private int tradeOfferID;
+    private String inventoryLoadUrl;
+    private String partnerInventoryLoadUrl;
+    public TradeStatus tradeStatus;
+    private HashMap<Long, HashMap<Long, Inventory>> myInventoryCache;
+    private HashMap<Long, HashMap<Long, Inventory>> theirInventoryCache;
 
     /**
-     * Получить детальную информацию о выбранном предложении обмена
-     * @param tradeOfferID Идентификатор предложения обмена
-     * @param language Язык
-     * @return CEconTradeOffer
+     * Creates a new Trade
+     *
+     * @param steamUser    Стим-пользователь
+     * @param tradeOfferID Идентификатор "trade offer"
+     * @param partner      Партнер
+     * @throws Exception
      */
-    public CEconTradeOffer getTradeOffer(String tradeOfferID, String language) throws SteamApiException {
-        Map<String, String> params = new HashMap<>();
-        params.put("tradeofferid", tradeOfferID);
-        params.put("language", language);
-        String result = doAPICall("GetTradeOffer/v1", params, HttpMethod.GET);
-        return gson.fromJson(result, CEconTradeOffer.class);
+    protected SteamTrade(SteamUser steamUser, int tradeOfferID, SteamID partner) throws Exception {
+        theirInventoryCache = new HashMap<Long, HashMap<Long, Inventory>>();
+        myInventoryCache = new HashMap<Long, HashMap<Long, Inventory>>();
+
+        this.user = steamUser;
+        this.tradeOfferID = tradeOfferID;
+
+        Gson gson = new Gson();
+
+        String html;
+        if (tradeOfferID == 0) {
+            System.out.println("http://steamcommunity.com/tradeoffer/new/?partner=" + partner.getAccountId());
+            html = steamUser.doCommunityCall("http://steamcommunity.com/tradeoffer/new/?partner=" + partner.getAccountId(), HttpMethod.GET, null, false);
+        } else {
+            html = steamUser.doCommunityCall("http://steamcommunity.com/tradeoffer/" + tradeOfferID + "/", HttpMethod.GET, null, false);
+        }
+        Pattern pattern = Pattern.compile("^\\s*var\\s+(g_.+?)\\s+=\\s+(.+?);\\r?$", Pattern.MULTILINE);
+        Matcher matcher = pattern.matcher(html);
+        Map<String, String> javascriptGlobals = new HashMap<String, String>();
+        while (matcher.find()) {
+            javascriptGlobals.put(matcher.group(1), matcher.group(2));
+        }
+
+        tradeStatus = gson.fromJson(javascriptGlobals.get("g_rgCurrentTradeStatus"), TradeStatus.class);
+        partner = new SteamID(Long.parseLong(gson.fromJson(javascriptGlobals.get("g_ulTradePartnerSteamID"), String.class)));
+        partnerName = gson.fromJson(javascriptGlobals.get("g_strTradePartnerPersonaName"), String.class);
+        sessionId = gson.fromJson(javascriptGlobals.get("g_sessionID"), String.class);
+        inventoryLoadUrl = gson.fromJson(javascriptGlobals.get("g_strInventoryLoadURL"), String.class);
+        partnerInventoryLoadUrl = gson.fromJson(javascriptGlobals.get("g_strTradePartnerInventoryLoadURL"), String.class);
+
+        tradeStatus.trade = this;
+
+        tradeStatus.me.tradeStatus = tradeStatus;
+        tradeStatus.me.gameContextMap = gson.fromJson(javascriptGlobals.get("g_rgAppContextData"), new TypeToken<Map<String, GameContext>>() {
+        }.getType());
+        tradeStatus.me.isPartner = false;
+
+        tradeStatus.them.tradeStatus = tradeStatus;
+        tradeStatus.them.gameContextMap = gson.fromJson(javascriptGlobals.get("g_rgPartnerAppContextData"), new TypeToken<Map<String, GameContext>>() {
+        }.getType());
+        tradeStatus.them.isPartner = true;
+
+        String tradeOfferMessage = "";
+        String tradeOfferJson = gson.toJson(tradeStatus);
+
+
+        List<NameValuePair> data = new ArrayList<NameValuePair>();
+        data.add(new BasicNameValuePair("sessionid", sessionId));
+        data.add(new BasicNameValuePair("partner", Long.toString(partner.getCommunityId())));
+        data.add(new BasicNameValuePair("tradeoffermessage", tradeOfferMessage));
+        data.add(new BasicNameValuePair("json_tradeoffer", tradeOfferJson));
+        data.add(new BasicNameValuePair("tradeofferid_countered", Integer.toString(tradeOfferID)));
+    }
+
+    private Inventory fetchMyInventory(long appId, long contextId) throws Exception {
+        if (!myInventoryCache.containsKey(appId)) {
+            myInventoryCache.put(appId, new HashMap<Long, Inventory>());
+        }
+
+        if (myInventoryCache.get(appId).containsKey(contextId)) {
+            return myInventoryCache.get(appId).get(contextId);
+        }
+
+        Gson gson = new Gson();
+        Inventory inventory = gson.fromJson(user.doCommunityCall(inventoryLoadUrl + appId + "/" + contextId + "/?trading=1", HttpMethod.GET, null, true), Inventory.class);
+        inventory.appId = appId;
+        inventory.contextId = contextId;
+        inventory.updateItems();
+        myInventoryCache.get(appId).put(contextId, inventory);
+        return inventory;
+    }
+
+    private Inventory fetchTheirInventory(long appId, long contextId) throws Exception {
+        if (!theirInventoryCache.containsKey(appId)) {
+            theirInventoryCache.put(appId, new HashMap<Long, Inventory>());
+        }
+
+        if (theirInventoryCache.get(appId).containsKey(contextId)) {
+            return theirInventoryCache.get(appId).get(contextId);
+        }
+        Gson gson = new Gson();
+
+        List<NameValuePair> data = new ArrayList<NameValuePair>();
+        data.add(new BasicNameValuePair("sessionid", sessionId));
+        data.add(new BasicNameValuePair("partner", Long.toString(partner.getCommunityId())));
+        data.add(new BasicNameValuePair("appid", Long.toString(appId)));
+        data.add(new BasicNameValuePair("contextid", Long.toString(contextId)));
+
+        Inventory inventory = gson.fromJson(user.doCommunityCall(partnerInventoryLoadUrl, HttpMethod.POST, data, true), Inventory.class);
+        inventory.appId = appId;
+        inventory.contextId = contextId;
+        inventory.updateItems();
+        theirInventoryCache.get(appId).put(contextId, inventory);
+        return inventory;
     }
 
     /**
-     * Отклонить входящее предложение обмена
-     * @param tradeOfferID Идентификатор предложения обмена
+     * Sends a new trade offer OR counter offer, depending on if this is a new trade offer
+     *
+     * @param message The message to be sent along with the trade offer
+     * @throws Exception
+     */
+    public void update(String message) throws Exception {
+        tradeStatus.version++;
+        tradeStatus.newversion = true;
+        Gson gson = new Gson();
+        List<NameValuePair> data = new ArrayList<NameValuePair>();
+        data.add(new BasicNameValuePair("sessionid", sessionId));
+        data.add(new BasicNameValuePair("partner", Long.toString(partner.getCommunityId())));
+        data.add(new BasicNameValuePair("tradeoffermessage", message));
+        data.add(new BasicNameValuePair("json_tradeoffer", gson.toJson(tradeStatus)));
+        if (tradeOfferID != 0) {
+            data.add(new BasicNameValuePair("'tradeofferid_countered'", Integer.toString(tradeOfferID)));
+        }
+        String result = user.doCommunityCall("http://steamcommunity.com/tradeoffer/new/send", HttpMethod.POST, data, true);
+        // TODO: parse/return the result
+    }
+
+    /**
+     * Accepts the trade
+     * After calling this, the trade object will be in an unusable state
+     *
+     * @throws Exception
+     */
+    public void accept() throws Exception {
+        List<NameValuePair> data = new ArrayList<NameValuePair>();
+        data.add(new BasicNameValuePair("sessionid", sessionId));
+        data.add(new BasicNameValuePair("tradeofferid", Long.toString(tradeOfferID)));
+
+        String result = user.doCommunityCall("http://steamcommunity.com/tradeoffer/" + tradeOfferID + "/accept", HttpMethod.POST, data, true);
+        // TODO: parse/return the result
+    }
+
+    /**
+     * Declines the trade
+     * After calling this, the trade object will be in an unusable state
+     *
      * @throws SteamApiException
      */
-    public void declineTradeOffer(String tradeOfferID) throws SteamApiException {
+    public void decline() throws SteamApiException {
         Map<String, String> params = new HashMap<>();
-        params.put("tradeofferid", tradeOfferID);
-        String result = doAPICall("DeclineTradeOffer/v1", params, HttpMethod.POST);
+        params.put("tradeofferid", String.valueOf(tradeOfferID));
+        String result = user.doAPICall("DeclineTradeOffer/v1", HttpMethod.POST, params);
     }
 
-    /**
-     * Отменить исходящее предложение обмена
-     * @param tradeOfferID Идентификатор предложения обмена
-     * @throws SteamApiException
+    /*
+     * These classes are mostly for GSON purposes
      */
-    public void cancelTradeOffer(String tradeOfferID) throws SteamApiException {
-        Map<String, String> params = new HashMap<>();
-        params.put("tradeofferid", tradeOfferID);
-        String result = doAPICall("CancelTradeOffer/v1", params, HttpMethod.POST);
-    }
-
-    public void acceptOffer() {
-
-    }
-
-    public void makeOffer() {
+    public class TradeStatus {
+        public boolean newversion;
+        public int version;
+        public TradeStatusUser me;
+        public TradeStatusUser them;
+        public transient SteamTrade trade;
 
     }
 
-    public void getItems() {
+    public class TradeStatusUser {
+        boolean ready;
+        private transient boolean isPartner;
+        ArrayList<TradeAsset> assets;
+        Map<String, GameContext> gameContextMap;
+        public transient TradeStatus tradeStatus;
 
-    }
+        public Inventory fetchInventory(long appId, long contextId) throws Exception {
+            if (isPartner)
+                return tradeStatus.trade.fetchTheirInventory(appId, contextId);
+            else
+                return tradeStatus.trade.fetchMyInventory(appId, contextId);
+        }
 
-    public void loadPartnerInventory() {
+        public Inventory.Description getDescription(TradeAsset tradeAsset) throws Exception {
+            return fetchInventory(tradeAsset.appid, tradeAsset.contextid).getDescription(tradeAsset);
+        }
 
-    }
+        public boolean addItem(Inventory.Item item) {
+            return addItem(item.inventory.appId, item.inventory.contextId, item.id);
+        }
 
-    public void loadMyInventory() {
+        private boolean addItem(long appId, long contextId, String id) {
+            TradeAsset tradeAsset = new TradeAsset();
+            tradeAsset.appid = appId;
+            tradeAsset.contextid = contextId;
+            tradeAsset.assetid = Long.parseLong(id);
+            addItem(tradeAsset);
+            return true;
+        }
 
-    }
-
-    public void getOfferToken() {
-
-    }
-
-    /**
-     * Выполнить HTTP-запрос к официальному SteamWebAPI
-     * @param method Вызываемый в API метод
-     * @param params Параметры запроса в виде карты "параметр" => "значение"
-     * @param httpMethod POST или GET запрос
-     */
-    private String doAPICall(String method, Map<String, String> params, HttpMethod httpMethod) throws SteamApiException {
-        try {
-            URIBuilder builder = new URIBuilder(apiUrl + method);
-            builder.setParameter("key", this.webApiKey);
-            builder.setParameter("format", "json");
-            switch (httpMethod) {
-                case GET:
-                    for(Map.Entry<String, String> param : params.entrySet()) {
-                        builder.setParameter(param.getKey(), param.getValue());
-                    }
-                    return helper.sendGet(builder.build());
-                case POST:
-                    return helper.sendPost(builder.build(), params);
-                default:
-                    throw new IllegalStateException("Undefined http method");
+        public boolean addItem(TradeAsset asset) {
+            if (!assets.contains(asset)) {
+                assets.add(asset);
+                return true;
             }
-        } catch (URISyntaxException e) {
-            throw new SteamApiException("Invalid API URI", e);
-        } catch (IOException e) {
-            throw new SteamApiException("HTTP Requset exception", e);
+            return false;
+        }
+
+        public boolean removeItem(TradeAsset asset) {
+            if (assets.contains(asset)) {
+                assets.remove(asset);
+                return true;
+            }
+            return false;
+        }
+
+        public boolean containsItem(int appId, int contextId, int assetId) {
+            for (TradeAsset tradeAsset : assets) {
+                if (tradeAsset.appid == appId && tradeAsset.contextid == contextId && tradeAsset.assetid == assetId)
+                    return true;
+            }
+            return false;
         }
     }
 
-    private void doComunityCall() {
+    public class TradeAsset {
+        public long appid;
+        public long contextid;
+        public long amount;
+        public long assetid;
+    }
 
+    public class Context {
+        public int asset_count;
+        public String id;
+        public String name;
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            Context context = (Context) o;
+
+            if (asset_count != context.asset_count) return false;
+            if (!id.equals(context.id)) return false;
+            if (!name.equals(context.name)) return false;
+
+            return true;
+        }
+
+        @Override
+        public int hashCode() {
+            int result = asset_count;
+            result = 31 * result + id.hashCode();
+            result = 31 * result + name.hashCode();
+            return result;
+        }
+    }
+
+    public class GameContext {
+        public int appid;
+        public String name;
+        public String icon;
+        public int asset_count;
+        public String inventory_logo;
+        public String trade_permissions;
+        public HashMap<String, Context> rgContexts;
     }
 
 }
