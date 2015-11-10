@@ -1,6 +1,6 @@
 package com.github.steam.api;
 
-public class SteamException extends Exception {
+class SteamException extends Exception {
 
     public SteamException(String message) {
         super("STEAM-API: " + message);
