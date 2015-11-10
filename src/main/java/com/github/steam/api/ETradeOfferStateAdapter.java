@@ -1,6 +1,5 @@
-package com.github.steam.api.model.adapter;
+package com.github.steam.api;
 
-import com.github.steam.api.common.ETradeOfferState;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
@@ -10,9 +9,10 @@ import java.lang.reflect.Type;
 
 /**
  * Преобразователь чистлового статуса в элемент перечисления ETradeOfferState
+ *
  * @author Andrey Marchenkov
  */
-public class ETradeOfferStateAdapter implements JsonDeserializer<ETradeOfferState> {
+class ETradeOfferStateAdapter implements JsonDeserializer<ETradeOfferState> {
 
     @Override
     public ETradeOfferState deserialize(JsonElement element, Type arg1, JsonDeserializationContext arg2) throws JsonParseException {

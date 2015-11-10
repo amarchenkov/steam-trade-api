@@ -40,7 +40,7 @@ public class Inventory {
         return new ArrayList<>(rgInventory.values());
     }
 
-    public Description getDescription(SteamTrade.TradeAsset tradeAsset) {
-        return rgInventory.get(Long.toString(tradeAsset.assetid)).description;
-    }
+//    public Description getDescription(SteamTrade.TradeAsset tradeAsset) {
+//        return rgInventory.get(Long.toString(tradeAsset.assetid)).description;
+//    }
 }

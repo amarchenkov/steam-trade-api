@@ -1,4 +1,4 @@
-package com.github.steam.api.model;
+package com.github.steam.api;
 
 public class SteamID {
 

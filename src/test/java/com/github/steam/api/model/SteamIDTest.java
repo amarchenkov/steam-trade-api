@@ -1,5 +1,6 @@
 package com.github.steam.api.model;
 
+import com.github.steam.api.SteamID;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;

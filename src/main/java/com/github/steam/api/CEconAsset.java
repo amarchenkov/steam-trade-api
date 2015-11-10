@@ -1,4 +1,4 @@
-package com.github.steam.api.common;
+package com.github.steam.api;
 
 /**
  * Description of item you will give up in the trade (regardless of who created the offer)

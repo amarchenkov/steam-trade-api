@@ -1,4 +1,4 @@
-package com.github.steam.api.common;
+package com.github.steam.api;
 
 public enum ETradeOfferState {
 

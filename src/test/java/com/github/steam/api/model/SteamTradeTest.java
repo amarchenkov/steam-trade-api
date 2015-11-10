@@ -1,16 +1,22 @@
 package com.github.steam.api.model;
 
-import com.github.steam.api.common.CEconTradeOffer;
-import com.github.steam.api.common.ETradeOfferState;
-import com.github.steam.api.exception.SteamApiException;
+import com.github.steam.api.CEconTradeOffer;
+import com.github.steam.api.SteamID;
+import com.github.steam.api.SteamUser;
+import com.github.steam.api.SteamWebState;
 import org.junit.Test;
 
 public class SteamTradeTest {
 
     @Test
-    public void getTradeOffersTest() throws SteamApiException {
+    public void getTradeOffersTest() throws Exception {
         SteamUser steamTrade = new SteamUser("2EAF26F70A37F67B9914DC4D9420D8F7");
-        ETradeOfferState state = ETradeOfferState.valueOf(2);
-        CEconTradeOffer offer = steamTrade.getTradeOffer("", "RU");
+        steamTrade.addCookie("steamMachineAuth76561198010004566", "F967A27C49B8E32AB167F9734F0788A7E567A9C2", true);
+        steamTrade.addCookie("steamLogin", "76561198010004566%7C%7C88C481E356B5916C01841DEC86618355C128308F", false);
+        steamTrade.addCookie("steamLoginSecure", "76561198010004566%7C%7CA531C654837F1905C6586C73765B8477A874552B", false);
+        steamTrade.addCookie("steamCountry", "RU%7C90d44fe7e18a9d857b0d0918d25f5734", false);
+        SteamWebState state = steamTrade.login("Freeman081", "!zsifhgv^FGysehgf7v6");
+        CEconTradeOffer tradeOffer = steamTrade.makeOffer(new SteamID(88904659));
+        System.out.println(steamTrade.getAuthCookie());
     }
 }

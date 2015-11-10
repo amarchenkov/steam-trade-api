@@ -1,4 +1,4 @@
-package com.github.steam.api.model;
+package com.github.steam.api;
 
 import java.util.HashMap;
 
@@ -45,19 +45,19 @@ class SteamLoginResponse {
         this.captcha_gid = captcha_gid;
     }
 
-    public boolean isEmailauthNeeded() {
+    public boolean isEmailAuthNeeded() {
         return emailauth_needed;
     }
 
-    public void setEmailauthNeeded(boolean emailauth_needed) {
+    public void setEmailAuthNeeded(boolean emailauth_needed) {
         this.emailauth_needed = emailauth_needed;
     }
 
-    public String getEmailsteamID() {
+    public String getEmailSteamID() {
         return emailsteamid;
     }
 
-    public void setEmailsteamID(String emailsteamid) {
+    public void setEmailSteamID(String emailsteamid) {
         this.emailsteamid = emailsteamid;
     }
 
