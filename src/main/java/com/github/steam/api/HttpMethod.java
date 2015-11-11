@@ -5,7 +5,7 @@ package com.github.steam.api;
  *
  * @author Andrey Marchenkov
  */
-public enum HttpMethod {
+enum HttpMethod {
     GET,
     POST,
 }

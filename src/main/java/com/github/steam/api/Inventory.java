@@ -1,4 +1,4 @@
-package com.github.steam.api.model;
+package com.github.steam.api;
 
 import java.util.ArrayList;
 import java.util.HashMap;

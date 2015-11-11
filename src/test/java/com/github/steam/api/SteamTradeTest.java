@@ -1,9 +1,5 @@
-package com.github.steam.api.model;
+package com.github.steam.api;
 
-import com.github.steam.api.CEconTradeOffer;
-import com.github.steam.api.SteamID;
-import com.github.steam.api.SteamUser;
-import com.github.steam.api.SteamWebState;
 import org.junit.Test;
 
 public class SteamTradeTest {
@@ -17,6 +13,5 @@ public class SteamTradeTest {
         steamTrade.addCookie("steamCountry", "RU%7C90d44fe7e18a9d857b0d0918d25f5734", false);
         SteamWebState state = steamTrade.login("Freeman081", "!zsifhgv^FGysehgf7v6");
         CEconTradeOffer tradeOffer = steamTrade.makeOffer(new SteamID(88904659));
-        System.out.println(steamTrade.getAuthCookie());
     }
 }

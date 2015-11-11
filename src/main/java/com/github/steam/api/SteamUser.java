@@ -35,7 +35,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Unofficial SDK for Steam Trade API.
+ * Пользователь стима от имени которого осуществляются действия
  *
  * @author Andrey Marchenkov
  */
@@ -44,7 +44,7 @@ public class SteamUser {
     private static final Logger LOG = LogManager.getLogger(SteamUser.class);
 
     /**
-     * URL for official API
+     * URL официального API
      */
     protected static final String apiUrl = "https://api.steampowered.com/IEconService/";
 
@@ -217,15 +217,15 @@ public class SteamUser {
         }
     }
 
-    public Map<String, String> getAuthCookie() {
-        Map<String, String> authCookie = new HashMap<>();
-        for (Cookie cookie : cookieStore.getCookies()) {
-            if (cookie.getName().startsWith("steam")) {
-                authCookie.put(cookie.getName(), cookie.getValue());
-            }
-        }
-        return authCookie;
-    }
+//    public Map<String, String> getAuthCookie() {
+//        Map<String, String> authCookie = new HashMap<>();
+//        for (Cookie cookie : cookieStore.getCookies()) {
+//            if (cookie.getName().startsWith("steam")) {
+//                authCookie.put(cookie.getName(), cookie.getValue());
+//            }
+//        }
+//        return authCookie;
+//    }
 
     /**
      * Выполнить HTTP-запрос к официальному SteamWebAPI
@@ -244,13 +244,13 @@ public class SteamUser {
                     for (Map.Entry<String, String> param : params.entrySet()) {
                         builder.setParameter(param.getKey(), param.getValue());
                     }
-                    return IOUtils.toString(request(builder.build().toString(), HttpMethod.GET, null, false, null).getEntity().getContent());
+                    return IOUtils.toString(request(builder.build().toString(), HttpMethod.GET, null, null).getEntity().getContent());
                 case POST:
                     List<NameValuePair> data = new ArrayList<>();
                     for (Map.Entry<String, String> param : params.entrySet()) {
                         data.add(new BasicNameValuePair(param.getKey(), param.getValue()));
                     }
-                    return IOUtils.toString(request(builder.build().toString(), HttpMethod.POST, data, false, null).getEntity().getContent());
+                    return IOUtils.toString(request(builder.build().toString(), HttpMethod.POST, data, null).getEntity().getContent());
                 default:
                     throw new IllegalStateException("Undefined http method");
             }
@@ -276,9 +276,14 @@ public class SteamUser {
         headers.put("Accept", "text/javascript, text/html, application/xml, text/xml, */*");
         headers.put("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
         headers.put("Host", "steamcommunity.com");
-        headers.put("Referer", "http://steamcommunity.com");
+        headers.put("Referer", "http://steamcommunity.com/tradeoffer/1");
 
-        HttpResponse response = request(url, httpMethod, data, isAjax, headers);
+        if (isAjax) {
+            headers.put("X-Requested-With", "XMLHttpRequest");
+            headers.put("X-Prototype-Version", "1.7");
+        }
+
+        HttpResponse response = request(url, httpMethod, data, headers);
         return IOUtils.toString(response.getEntity().getContent());
     }
 
@@ -313,11 +318,10 @@ public class SteamUser {
      * @param url    Идентификатор ресурса
      * @param method HTTP-метод
      * @param data   Данные для тела запроса
-     * @param isAjax Флаг ajax-запроса
      * @return HTTP-ответ
      * @throws IOException
      */
-    private HttpResponse request(String url, HttpMethod method, List<NameValuePair> data, boolean isAjax, Map<String, String> headers) throws IOException {
+    private HttpResponse request(String url, HttpMethod method, List<NameValuePair> data, Map<String, String> headers) throws IOException {
         HttpRequest request;
         if (method == HttpMethod.POST) {
             request = new HttpPost(url);
@@ -328,11 +332,6 @@ public class SteamUser {
             for (Map.Entry<String, String> header : headers.entrySet()) {
                 request.setHeader(header.getKey(), header.getValue());
             }
-        }
-
-        if (isAjax) {
-            request.setHeader("X-Requested-With", "XMLHttpRequest");
-            request.setHeader("X-Prototype-Version", "1.7");
         }
 
         if (data != null && request instanceof HttpPost) {

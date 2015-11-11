@@ -1,68 +1,80 @@
 package com.github.steam.api;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 import org.apache.http.NameValuePair;
+import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.message.BasicNameValuePair;
 
-import java.io.IOException;
+import java.lang.reflect.Type;
+import java.net.URI;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Both GetTradeOffers and GetTradeOffer return this structure
+ * Структура, возвращаемая методами GetTradeOffers и GetTradeOffer
  *
  * @author Andrey Marchenkov
  */
+//TODO Навести порядок с сущностями
+//TODO Навести порядок с именами и доступностью классов
 public class CEconTradeOffer {
 
+    private transient String themInventoryLoadUrl;
+    private transient String meInventoryLoadUrl;
+    private transient String sessionId;
+    private transient TradeStatus tradeStatus;
+
     /**
-     * A unique identifier for the trade offer
+     * Уникальный идентификатор предложения обмена
      */
     private String tradeofferid;
 
     /**
-     * Your partner in the trade offer
+     * Идентификатор партнера по предложению обмена
      */
     private long accountid_other;
 
     /**
-     * A message included by the creator of the trade offer
+     * Сообщение создателя предложения обмена
      */
     private String message;
 
     /**
-     * UNIX time when the offer will expire (or expired, if it is in the past)
+     * Метка времени UNIX истечени срока действия
      */
     private long expiration_time;
 
     /**
-     * @see ETradeOfferState above
+     * Состояние предложения обмена
+     * @see ETradeOfferState
      */
     private ETradeOfferState trade_offer_state;
 
     /**
-     * Array of CEcon_Asset, items you will give up in the trade (regardless of who created the offer)
+     * Массив объектов класса CEconAsset, предметы отправленные для обмена (независимо от того, кто создал предложение обмена)
      */
     private CEconAsset[] items_to_give;
 
     /**
-     * Array of CEcon_Asset, items you will receive in the trade (regardless of who created the offer)
+     * Массив объектов класса CEconAsset, предметы полученные для обмена (независимо от того, кто создал предложение обмена)
      */
     private CEconAsset[] items_to_receive;
 
     /**
-     * Boolean to indicate this is an offer you created
+     * Флаг, указывающий на принадлежность к текущему пользователю
      */
     private boolean is_our_offer;
 
     /**
-     * UNIX timestamp of the time the offer was sent
+     * Метка времени UNIX создания предложения обмена
      */
     private long time_created;
 
     /**
-     * UNIX timestamp of the time the trade_offer_state last changed
+     * Метка времени UNIX последнего изменения предложения обмена
      */
     private long time_updated;
 
@@ -71,24 +83,27 @@ public class CEconTradeOffer {
      */
     private boolean from_real_time_trade;
 
+    /**
+     * Steam-пользователь
+     */
     private transient SteamUser steamUser;
 
     public CEconTradeOffer() {
     }
 
-    protected CEconTradeOffer(SteamUser steamUser, int tradeOfferID, SteamID accountIDOther) throws IOException {
+    protected CEconTradeOffer(SteamUser steamUser, int tradeOfferID, SteamID accountIDOther) throws Exception {
         this.tradeofferid = String.valueOf(tradeOfferID);
         this.accountid_other = accountIDOther.getCommunityId();
         this.steamUser = steamUser;
 
-        Gson gson = new Gson();
-
+        Gson gson = new GsonBuilder().create();
         String html;
         if (tradeOfferID == 0) {
             html = steamUser.doCommunityCall("https://steamcommunity.com/tradeoffer/new/?partner=" + accountIDOther.getAccountId(), HttpMethod.GET, null, false);
         } else {
             html = steamUser.doCommunityCall("https://steamcommunity.com/tradeoffer/" + tradeOfferID + "/", HttpMethod.GET, null, false);
         }
+
         Pattern pattern = Pattern.compile("^\\s*var\\s+(g_.+?)\\s+=\\s+(.+?);\\r?$", Pattern.MULTILINE);
         Matcher matcher = pattern.matcher(html);
         Map<String, String> javascriptGlobals = new HashMap<>();
@@ -96,36 +111,23 @@ public class CEconTradeOffer {
             javascriptGlobals.put(matcher.group(1), matcher.group(2));
         }
 
-        String s1 = javascriptGlobals.get("g_rgCurrentTradeStatus");
-        String s2 = javascriptGlobals.get("g_ulTradePartnerSteamID");
-        String s3 = javascriptGlobals.get("g_strTradePartnerPersonaName");
-        String s4 = javascriptGlobals.get("g_sessionID");
-        String s5 = javascriptGlobals.get("g_strInventoryLoadURL");
-        String s6 = javascriptGlobals.get("g_strTradePartnerInventoryLoadURL");
-        String s7 = javascriptGlobals.get("g_rgAppContextData");
-        String s8 = javascriptGlobals.get("g_rgPartnerAppContextData");
+        this.tradeStatus = gson.fromJson(javascriptGlobals.get("g_rgCurrentTradeStatus"), TradeStatus.class);
+        this.setAccountIDOther(new SteamID(gson.fromJson(javascriptGlobals.get("g_ulTradePartnerSteamID"), Long.class)).getAccountId());
+        this.sessionId = gson.fromJson(javascriptGlobals.get("g_sessionID"), String.class);
+        this.setMessage("");
 
-//        tradeStatus = gson.fromJson(javascriptGlobals.get("g_rgCurrentTradeStatus"), TradeStatus.class);
-//        this.setAccountIDOther(new SteamID(Long.parseLong(gson.fromJson(javascriptGlobals.get("g_ulTradePartnerSteamID"), String.class))).getCommunityId());
-//        partnerName = gson.fromJson(javascriptGlobals.get("g_strTradePartnerPersonaName"), String.class);
-//        sessionId = gson.fromJson(javascriptGlobals.get("g_sessionID"), String.class);
-//        inventoryLoadUrl = gson.fromJson(javascriptGlobals.get("g_strInventoryLoadURL"), String.class);
-//        partnerInventoryLoadUrl = gson.fromJson(javascriptGlobals.get("g_strTradePartnerInventoryLoadURL"), String.class);
-//
-//        tradeStatus.trade = this;
-//
-//        tradeStatus.me.tradeStatus = tradeStatus;
-//        tradeStatus.me.gameContextMap = gson.fromJson(javascriptGlobals.get("g_rgAppContextData"), new TypeToken<Map<String, GameContext>>() {
-//        }.getType());
-//        tradeStatus.me.isPartner = false;
-//
-//        tradeStatus.them.tradeStatus = tradeStatus;
-//        tradeStatus.them.gameContextMap = gson.fromJson(javascriptGlobals.get("g_rgPartnerAppContextData"), new TypeToken<Map<String, GameContext>>() {
-//        }.getType());
-//        tradeStatus.them.isPartner = true;
-//
-//        String tradeOfferMessage = "";
-//        String tradeOfferJson = gson.toJson(tradeStatus);
+        meInventoryLoadUrl = gson.fromJson(javascriptGlobals.get("g_strInventoryLoadURL"), String.class);
+        themInventoryLoadUrl = gson.fromJson(javascriptGlobals.get("g_strTradePartnerInventoryLoadURL"), String.class);
+
+        this.tradeStatus.getMe().setPartner(false);
+        Type type = new TypeToken<HashMap<String, GameContext>>(){}.getType();
+        this.tradeStatus.getMe().setGameContext(gson.<Map<String, GameContext>>fromJson(javascriptGlobals.get("g_rgAppContextData"), type));
+        this.tradeStatus.getMe().setAssets(this.fetchMyInventory(570, 2, meInventoryLoadUrl));
+
+        this.tradeStatus.getThem().setPartner(true);
+        this.tradeStatus.getThem().setGameContext(gson.<Map<String, GameContext>>fromJson(javascriptGlobals.get("g_rgPartnerAppContextData"), type));
+        this.tradeStatus.getThem().setAssets(this.fetchTheirInventory(570, 2, themInventoryLoadUrl));
+
     }
 
     public String getTradeOfferID() {
@@ -216,24 +218,39 @@ public class CEconTradeOffer {
         this.from_real_time_trade = from_real_time_trade;
     }
 
+    private Inventory fetchMyInventory(long appId, long contextId, String inventoryLoadUrl) throws Exception {
+        String s1 = steamUser.doCommunityCall(inventoryLoadUrl + appId + "/" + contextId + "/?trading=1", HttpMethod.GET, null, true);
+        return null;
+    }
+
+    private Inventory fetchTheirInventory(long appId, long contextId, String inventoryLoadUrl) throws Exception {
+        URI uri = new URIBuilder(inventoryLoadUrl)
+                .setParameter("sessionid", sessionId)
+                .setParameter("partner", "76561198049170387")
+                .setParameter("appid", Long.toString(appId))
+                .setParameter("contextid", Long.toString(contextId))
+                .build();
+
+        String s2 = steamUser.doCommunityCall(uri.toString(), HttpMethod.GET, null, true);
+        return null;
+    }
 
     /**
      * Sends a new trade offer OR counter offer, depending on if this is a new trade offer
      *
-     * @param message The message to be sent along with the trade offer
      * @throws Exception
      */
-    public void update(String message) throws Exception {
-//        tradeStatus.version++;
-//        tradeStatus.newversion = true;
+    public void update() throws Exception {
+        tradeStatus.setVersion(tradeStatus.getVersion() + 1);
+        tradeStatus.setNewVersion(true);
         Gson gson = new Gson();
-        List<NameValuePair> data = new ArrayList<NameValuePair>();
-//        data.add(new BasicNameValuePair("sessionid", sessionId));
-//        data.add(new BasicNameValuePair("partner", Long.toString(partner.getCommunityId())));
-        data.add(new BasicNameValuePair("tradeoffermessage", message));
-//        data.add(new BasicNameValuePair("json_tradeoffer", gson.toJson(tradeStatus)));
+        List<NameValuePair> data = new ArrayList<>();
+        data.add(new BasicNameValuePair("sessionid", sessionId));
+        data.add(new BasicNameValuePair("partner", Long.toString(this.getAccountIDOther())));
+        data.add(new BasicNameValuePair("tradeoffermessage", this.getMessage()));
+        data.add(new BasicNameValuePair("json_tradeoffer", gson.toJson(tradeStatus)));
         if (!Objects.equals(getTradeOfferID(), "0")) {
-            data.add(new BasicNameValuePair("'tradeofferid_countered'", getTradeOfferID()));
+            data.add(new BasicNameValuePair("tradeofferid_countered", getTradeOfferID()));
         }
         String result = steamUser.doCommunityCall("https://steamcommunity.com/tradeoffer/new/send", HttpMethod.POST, data, true);
         // TODO: parse/return the result
@@ -247,7 +264,7 @@ public class CEconTradeOffer {
      */
     public void accept() throws Exception {
         List<NameValuePair> data = new ArrayList<>();
-//        data.add(new BasicNameValuePair("sessionid", sessionId));
+        data.add(new BasicNameValuePair("sessionid", sessionId));
         data.add(new BasicNameValuePair("tradeofferid", getTradeOfferID()));
 
         String result = steamUser.doCommunityCall("https://steamcommunity.com/tradeoffer/" + getTradeOfferID() + "/accept", HttpMethod.POST, data, true);
@@ -266,47 +283,6 @@ public class CEconTradeOffer {
         String result = steamUser.doAPICall("DeclineTradeOffer/v1", HttpMethod.POST, params);
     }
 
-//    private Inventory fetchMyInventory(long appId, long contextId) throws Exception {
-//        if (!myInventoryCache.containsKey(appId)) {
-//            myInventoryCache.put(appId, new HashMap<Long, Inventory>());
-//        }
-//
-//        if (myInventoryCache.get(appId).containsKey(contextId)) {
-//            return myInventoryCache.get(appId).get(contextId);
-//        }
-//
-//        Gson gson = new Gson();
-//        Inventory inventory = gson.fromJson(user.doCommunityCall(inventoryLoadUrl + appId + "/" + contextId + "/?trading=1", HttpMethod.GET, null, true), Inventory.class);
-//        inventory.appId = appId;
-//        inventory.contextId = contextId;
-//        inventory.updateItems();
-//        myInventoryCache.get(appId).put(contextId, inventory);
-//        return inventory;
-//    }
-//
-//    private Inventory fetchTheirInventory(long appId, long contextId) throws Exception {
-//        if (!theirInventoryCache.containsKey(appId)) {
-//            theirInventoryCache.put(appId, new HashMap<Long, Inventory>());
-//        }
-//
-//        if (theirInventoryCache.get(appId).containsKey(contextId)) {
-//            return theirInventoryCache.get(appId).get(contextId);
-//        }
-//        Gson gson = new Gson();
-//
-//        List<NameValuePair> data = new ArrayList<NameValuePair>();
-//        data.add(new BasicNameValuePair("sessionid", sessionId));
-//        data.add(new BasicNameValuePair("partner", Long.toString(partner.getCommunityId())));
-//        data.add(new BasicNameValuePair("appid", Long.toString(appId)));
-//        data.add(new BasicNameValuePair("contextid", Long.toString(contextId)));
-//
-//        Inventory inventory = gson.fromJson(user.doCommunityCall(partnerInventoryLoadUrl, HttpMethod.POST, data, true), Inventory.class);
-//        inventory.appId = appId;
-//        inventory.contextId = contextId;
-//        inventory.updateItems();
-//        theirInventoryCache.get(appId).put(contextId, inventory);
-//        return inventory;
-//    }
 
     @Override
     public String toString() {
