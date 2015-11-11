@@ -39,9 +39,9 @@ import java.util.Map;
  *
  * @author Andrey Marchenkov
  */
-public class SteamUser {
+public class ETradeUser {
 
-    private static final Logger LOG = LogManager.getLogger(SteamUser.class);
+    private static final Logger LOG = LogManager.getLogger(ETradeUser.class);
 
     /**
      * URL официального API
@@ -52,12 +52,12 @@ public class SteamUser {
     private CloseableHttpClient httpClient;
     private Gson gson;
     private String webApiKey;
-    private SteamWebState webState;
-    private SteamLoginResponse loginJson;
+    private ETradeUserState webState;
+    private CEconLoginResponse loginJson;
 
-    public SteamUser(String webApiKey) {
+    public ETradeUser(String webApiKey) {
         this.webApiKey = webApiKey;
-        this.webState = SteamWebState.NOT_LOGGED_IN;
+        this.webState = ETradeUserState.NOT_LOGGED_IN;
         this.cookieStore = new BasicCookieStore();
         this.gson = new GsonBuilder().registerTypeAdapter(ETradeOfferState.class, new ETradeOfferStateAdapter()).create();
         this.httpClient = HttpClients.custom().setDefaultCookieStore(this.cookieStore).build();
@@ -68,15 +68,15 @@ public class SteamUser {
      *
      * @param params Список параметров
      * @return Список CEconTradeOffer
-     * @throws SteamException
+     * @throws ETradeException
      */
-    public List<CEconTradeOffer> getTradeOffers(Map<String, String> params) throws SteamException {
+    public List<ETradeOffer> getTradeOffers(Map<String, String> params) throws ETradeException {
         if (!params.containsKey("get_sent_offers") && !params.containsKey("get_received_offers")) {
             params.put("get_received_offers", "true");
             params.put("get_sent_offers", "true");
         }
         String result = doAPICall("GetTradeOffers/v1", HttpMethod.GET, params);
-        Type listType = new TypeToken<ArrayList<CEconTradeOffer>>() {
+        Type listType = new TypeToken<ArrayList<ETradeOffer>>() {
         }.getType();
         return gson.fromJson(result, listType);
     }
@@ -88,21 +88,21 @@ public class SteamUser {
      * @param language     Язык
      * @return CEconTradeOffer
      */
-    public CEconTradeOffer getTradeOffer(String tradeOfferID, String language) throws SteamException {
+    public ETradeOffer getTradeOffer(String tradeOfferID, String language) throws ETradeException {
         Map<String, String> params = new HashMap<>();
         params.put("tradeofferid", tradeOfferID);
         params.put("language", language);
         String result = doAPICall("GetTradeOffer/v1", HttpMethod.GET, params);
-        return gson.fromJson(result, CEconTradeOffer.class);
+        return gson.fromJson(result, ETradeOffer.class);
     }
 
     /**
      * Отменить исходящее предложение обмена
      *
      * @param tradeOfferID Идентификатор предложения обмена
-     * @throws SteamException
+     * @throws ETradeException
      */
-    public void cancelTradeOffer(String tradeOfferID) throws SteamException {
+    public void cancelTradeOffer(String tradeOfferID) throws ETradeException {
         Map<String, String> params = new HashMap<>();
         params.put("tradeofferid", tradeOfferID);
         String result = doAPICall("CancelTradeOffer/v1", HttpMethod.POST, params);
@@ -115,8 +115,8 @@ public class SteamUser {
      * @return SteamTrade - экземпляр
      * @throws Exception
      */
-    public CEconTradeOffer makeOffer(SteamID partner) throws Exception {
-        return new CEconTradeOffer(this, 0, partner);
+    public ETradeOffer makeOffer(SteamID partner) throws Exception {
+        return new ETradeOffer(this, 0, partner);
     }
 
     /**
@@ -125,7 +125,7 @@ public class SteamUser {
      * @return Список CEconTradeOffer
      * @throws IOException
      */
-    public List<CEconTradeOffer> getOutcomingTradeOffers() throws IOException, SteamException {
+    public List<ETradeOffer> getOutcomingTradeOffers() throws IOException, ETradeException {
         Map<String, String> params = new HashMap<>();
         params.put("get_sent_offers", "true");
         return this.getTradeOffers(params);
@@ -137,7 +137,7 @@ public class SteamUser {
      * @return Список CEconTradeOffer
      * @throws IOException
      */
-    public List<CEconTradeOffer> getIncomingTradeOffers() throws IOException, SteamException {
+    public List<ETradeOffer> getIncomingTradeOffers() throws IOException, ETradeException {
         Map<String, String> params = new HashMap<>();
         params.put("get_received_offers", "true");
         return this.getTradeOffers(params);
@@ -148,11 +148,11 @@ public class SteamUser {
      *
      * @return SteamUserState
      */
-    public SteamWebState getWebState() {
+    public ETradeUserState getWebState() {
         return this.webState;
     }
 
-    public SteamWebState login(String username, String password) throws Exception {
+    public ETradeUserState login(String username, String password) throws Exception {
         return this.login(username, password, null, null);
     }
 
@@ -162,14 +162,14 @@ public class SteamUser {
      * @param username Имя пользователя
      * @param password Пароль пользователя
      */
-    public SteamWebState login(String username, String password, String steamGuardText, String capText) throws Exception {
+    public ETradeUserState login(String username, String password, String steamGuardText, String capText) throws Exception {
         List<NameValuePair> data = new ArrayList<>();
         data.add(new BasicNameValuePair("username", username));
         String response = doCommunityCall("https://steamcommunity.com/login/getrsakey", HttpMethod.POST, data, false);
-        RsaKeyResponse rsaKeyResponse = gson.fromJson(response, RsaKeyResponse.class);
+        CEconRsaKeyResponse rsaKeyResponse = gson.fromJson(response, CEconRsaKeyResponse.class);
 
         if (!rsaKeyResponse.isSuccess()) {
-            return SteamWebState.GET_RSA_FAILED;
+            return ETradeUserState.GET_RSA_FAILED;
         }
 
         BigInteger mod = new BigInteger(rsaKeyResponse.getPublickeyMod(), 16);
@@ -192,17 +192,17 @@ public class SteamUser {
 
         data.add(new BasicNameValuePair("rsatimestamp", rsaKeyResponse.getTimestamp()));
         String webResponse = doCommunityCall("https://steamcommunity.com/login/dologin/", HttpMethod.POST, data, false);
-        this.loginJson = gson.fromJson(webResponse, SteamLoginResponse.class);
+        this.loginJson = gson.fromJson(webResponse, CEconLoginResponse.class);
 
         if (loginJson.isCaptchaNeeded()) {
             LOG.info("SteamWeb: Captcha is needed.");
             LOG.info("https://steamcommunity.com/public/captcha.php?gid=" + loginJson.getCaptchaGid());
-            return SteamWebState.CAPTCHA_NEEDE;
+            return ETradeUserState.CAPTCHA_NEEDE;
         }
 
         if (loginJson.isEmailAuthNeeded()) {
             LOG.info("SteamWeb: SteamGuard is needed.");
-            return SteamWebState.STEAM_GUARD_NEEDED;
+            return ETradeUserState.STEAM_GUARD_NEEDED;
         }
 
         if (loginJson.isSuccess()) {
@@ -211,9 +211,9 @@ public class SteamUser {
                 data.add(new BasicNameValuePair(stringStringEntry.getKey(), stringStringEntry.getValue()));
             }
             doCommunityCall(loginJson.getTransferUrl(), HttpMethod.POST, data, false);
-            return SteamWebState.LOGGED_IN;
+            return ETradeUserState.LOGGED_IN;
         } else {
-            return SteamWebState.LOGIN_FAILED;
+            return ETradeUserState.LOGIN_FAILED;
         }
     }
 
@@ -234,7 +234,7 @@ public class SteamUser {
      * @param params     Параметры запроса в виде карты "параметр" => "значение"
      * @param httpMethod POST или GET запрос
      */
-    protected String doAPICall(String method, HttpMethod httpMethod, Map<String, String> params) throws SteamException {
+    protected String doAPICall(String method, HttpMethod httpMethod, Map<String, String> params) throws ETradeException {
         try {
             URIBuilder builder = new URIBuilder(apiUrl + method);
             builder.setParameter("key", this.webApiKey);
@@ -255,9 +255,9 @@ public class SteamUser {
                     throw new IllegalStateException("Undefined http method");
             }
         } catch (URISyntaxException e) {
-            throw new SteamException("Invalid API URI", e);
+            throw new ETradeException("Invalid API URI", e);
         } catch (IOException e) {
-            throw new SteamException("HTTP Requset exception", e);
+            throw new ETradeException("HTTP Requset exception", e);
         }
     }
 

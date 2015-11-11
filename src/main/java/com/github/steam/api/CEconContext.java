@@ -1,6 +1,6 @@
 package com.github.steam.api;
 
-class Context {
+class CEconContext {
 
     private int asset_count;
     private String id;
@@ -34,7 +34,7 @@ class Context {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        Context context = (Context) o;
+        CEconContext context = (CEconContext) o;
         return asset_count == context.asset_count && id.equals(context.id) && name.equals(context.name);
     }
 

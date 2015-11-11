@@ -1,6 +1,6 @@
 package com.github.steam.api;
 
-class RsaKeyResponse {
+class CEconRsaKeyResponse {
 
     private boolean success;
     private String publickey_mod;

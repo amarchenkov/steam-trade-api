@@ -1,11 +1,12 @@
 package com.github.steam.api;
 
-class TradeStatus {
+class CEconTradeStatus {
 
     private boolean newversion;
     private long version;
-    private TradePartipiant me;
-    private TradePartipiant them;
+    private ETradePartipiant me;
+    private ETradePartipiant them;
+    private transient ETradeOffer tradeOffer;
 
     public boolean isNewVersion() {
         return newversion;
@@ -15,11 +16,11 @@ class TradeStatus {
         return version;
     }
 
-    public TradePartipiant getMe() {
+    public ETradePartipiant getMe() {
         return me;
     }
 
-    public TradePartipiant getThem() {
+    public ETradePartipiant getThem() {
         return them;
     }
 
@@ -31,12 +32,20 @@ class TradeStatus {
         this.version = version;
     }
 
-    public void setMe(TradePartipiant me) {
+    public void setMe(ETradePartipiant me) {
         this.me = me;
     }
 
-    public void setThem(TradePartipiant them) {
+    public void setThem(ETradePartipiant them) {
         this.them = them;
+    }
+
+    public ETradeOffer getTradeOffer() {
+        return tradeOffer;
+    }
+
+    public void setTradeOffer(ETradeOffer tradeOffer) {
+        this.tradeOffer = tradeOffer;
     }
 
     @Override

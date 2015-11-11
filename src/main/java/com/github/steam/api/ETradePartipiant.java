@@ -3,29 +3,13 @@ package com.github.steam.api;
 import java.util.List;
 import java.util.Map;
 
-class TradePartipiant {
+class ETradePartipiant {
 
     private boolean ready;
-    private Inventory assets;
+    private List<CEconAsset> assets;
     private transient boolean isPartner;
-    private transient Map<String, GameContext> gameContext;
-    private transient List<CEconAsset> inventoryItems;
-
-    public boolean isReady() {
-        return ready;
-    }
-
-    public void setReady(boolean ready) {
-        this.ready = ready;
-    }
-
-    public Inventory getAssets() {
-        return assets;
-    }
-
-    public void setAssets(Inventory assets) {
-        this.assets = assets;
-    }
+    private transient CEconTradeStatus tradeStatus;
+    private transient Map<String, CEconGameContext> gameContext;
 
     public boolean isPartner() {
         return isPartner;
@@ -35,29 +19,32 @@ class TradePartipiant {
         isPartner = partner;
     }
 
-    public Map<String, GameContext> getGameContext() {
+    public Map<String, CEconGameContext> getGameContext() {
         return gameContext;
     }
 
-    public void setGameContext(Map<String, GameContext> gameContext) {
+    public void setGameContext(Map<String, CEconGameContext> gameContext) {
         this.gameContext = gameContext;
     }
 
-    public void setInventoryItems(List<CEconAsset> items) {
-        this.inventoryItems = items;
-
+    public CEconInventory fetchInventory(long appId, long contextId) throws Exception {
+        if (isPartner) {
+            return tradeStatus.getTradeOffer().fetchTheirInventory(appId, contextId);
+        } else {
+            return tradeStatus.getTradeOffer().fetchMyInventory(appId, contextId);
+        }
     }
 
-    public List<CEconAsset> getInventoryItems() {
-        return this.inventoryItems;
+    public CEconInventoryDescription getDescription(CEconAsset tradeAsset) throws Exception {
+        return fetchInventory(tradeAsset.getAppID(), tradeAsset.getContextID()).getDescription(tradeAsset);
     }
 
-    private boolean addItem(long appId, long contextId, long id) {
-        CEconAsset asset = new CEconAsset();
-        asset.setAppID(appId);
-        asset.setContextID(contextId);
-        asset.setAssetID(id);
-        addItem(asset);
+    private boolean addItem(long appId, long contextId, String id) {
+        CEconAsset tradeAsset = new CEconAsset();
+        tradeAsset.setAppID(appId);
+        tradeAsset.setContextID(contextId);
+        tradeAsset.setAssetID(Long.parseLong(id));
+        addItem(tradeAsset);
         return true;
     }
 
@@ -85,6 +72,10 @@ class TradePartipiant {
         return false;
     }
 
+    public void setTradeStatus(CEconTradeStatus tradeStatus) {
+        this.tradeStatus = tradeStatus;
+    }
+
     @Override
     public String toString() {
         return "TradeStatusUser{" +
@@ -92,7 +83,6 @@ class TradePartipiant {
                 ", assets=" + assets +
                 ", isPartner=" + isPartner +
                 ", gameContext=" + gameContext +
-                ", inventoryLoadUrl='" + inventoryLoadUrl + '\'' +
                 '}';
     }
 

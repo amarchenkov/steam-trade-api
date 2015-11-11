@@ -2,14 +2,14 @@ package com.github.steam.api;
 
 import java.util.Map;
 
-class GameContext {
+class CEconGameContext {
     private int appid;
     private String name;
     private String icon;
     private int asset_count;
     private String inventory_logo;
     private String trade_permissions;
-    private Map<String, Context> rgContexts;
+    private Map<String, CEconContext> rgContexts;
 
     public int getAppid() {
         return appid;
@@ -59,11 +59,11 @@ class GameContext {
         this.trade_permissions = trade_permissions;
     }
 
-    public Map<String, Context> getRgContexts() {
+    public Map<String, CEconContext> getRgContexts() {
         return rgContexts;
     }
 
-    public void setRgContexts(Map<String, Context> rgContexts) {
+    public void setRgContexts(Map<String, CEconContext> rgContexts) {
         this.rgContexts = rgContexts;
     }
 

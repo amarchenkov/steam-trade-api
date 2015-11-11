@@ -2,7 +2,7 @@ package com.github.steam.api;
 
 import java.util.HashMap;
 
-class SteamLoginResponse {
+class CEconLoginResponse {
 
     private boolean success;
     private String message;

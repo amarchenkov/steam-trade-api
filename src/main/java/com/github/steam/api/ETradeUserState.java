@@ -5,7 +5,7 @@ package com.github.steam.api;
  *
  * @author Andrey Marchenkov
  */
-public enum SteamWebState {
+public enum ETradeUserState {
     NOT_LOGGED_IN,
     LOGGED_IN,
     LOGIN_FAILED,
