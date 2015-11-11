@@ -2,7 +2,7 @@ package com.github.steam.api;
 
 import java.util.HashMap;
 
-public class CEconInventory {
+class CEconInventory {
 
     private boolean success;
     private HashMap<String, CEconInventoryItem> rgInventory;

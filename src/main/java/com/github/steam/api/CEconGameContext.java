@@ -3,6 +3,7 @@ package com.github.steam.api;
 import java.util.Map;
 
 class CEconGameContext {
+
     private int appid;
     private String name;
     private String icon;
@@ -11,11 +12,11 @@ class CEconGameContext {
     private String trade_permissions;
     private Map<String, CEconContext> rgContexts;
 
-    public int getAppid() {
+    public int getAppID() {
         return appid;
     }
 
-    public void setAppid(int appid) {
+    public void setAppID(int appid) {
         this.appid = appid;
     }
 
@@ -35,27 +36,27 @@ class CEconGameContext {
         this.icon = icon;
     }
 
-    public int getAsset_count() {
+    public int getAssetCount() {
         return asset_count;
     }
 
-    public void setAsset_count(int asset_count) {
+    public void setAssetCount(int asset_count) {
         this.asset_count = asset_count;
     }
 
-    public String getInventory_logo() {
+    public String getInventoryLogo() {
         return inventory_logo;
     }
 
-    public void setInventory_logo(String inventory_logo) {
+    public void setInventoryLogo(String inventory_logo) {
         this.inventory_logo = inventory_logo;
     }
 
-    public String getTrade_permissions() {
+    public String getTradePermissions() {
         return trade_permissions;
     }
 
-    public void setTrade_permissions(String trade_permissions) {
+    public void setTradePermissions(String trade_permissions) {
         this.trade_permissions = trade_permissions;
     }
 

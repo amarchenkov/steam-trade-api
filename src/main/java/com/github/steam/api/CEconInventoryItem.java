@@ -1,6 +1,6 @@
 package com.github.steam.api;
 
-public class CEconInventoryItem {
+class CEconInventoryItem {
 
     private String id;
     private String classid;

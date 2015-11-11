@@ -40,20 +40,6 @@ public class CEconAsset {
      */
     private boolean missing;
 
-    public CEconAsset() {
-    }
-
-    public CEconAsset(long appid, long contextid, long assetid, String currencyid, String classid, String instanceid, float amount, boolean missing) {
-        this.appid = appid;
-        this.contextid = contextid;
-        this.assetid = assetid;
-        this.currencyid = currencyid;
-        this.classid = classid;
-        this.instanceid = instanceid;
-        this.amount = amount;
-        this.missing = missing;
-    }
-
     public long getAppID() {
         return appid;
     }

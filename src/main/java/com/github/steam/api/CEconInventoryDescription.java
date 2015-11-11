@@ -3,7 +3,7 @@ package com.github.steam.api;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-public class CEconInventoryDescription {
+class CEconInventoryDescription {
 
     private String appid;
     private String classid;

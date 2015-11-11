@@ -170,6 +170,7 @@ public class ETradeUser {
         CEconRsaKeyResponse rsaKeyResponse = gson.fromJson(response, CEconRsaKeyResponse.class);
 
         if (!rsaKeyResponse.isSuccess()) {
+            this.webState = ETradeUserState.GET_RSA_FAILED;
             return ETradeUserState.GET_RSA_FAILED;
         }
 
@@ -198,11 +199,13 @@ public class ETradeUser {
         if (loginJson.isCaptchaNeeded()) {
             LOG.info("SteamWeb: Captcha is needed.");
             LOG.info("https://steamcommunity.com/public/captcha.php?gid=" + loginJson.getCaptchaGid());
+            this.webState = ETradeUserState.CAPTCHA_NEEDE;
             return ETradeUserState.CAPTCHA_NEEDE;
         }
 
         if (loginJson.isEmailAuthNeeded()) {
             LOG.info("SteamWeb: SteamGuard is needed.");
+            this.webState = ETradeUserState.STEAM_GUARD_NEEDED;
             return ETradeUserState.STEAM_GUARD_NEEDED;
         }
 
@@ -212,8 +215,10 @@ public class ETradeUser {
                 data.add(new BasicNameValuePair(stringStringEntry.getKey(), stringStringEntry.getValue()));
             }
             doCommunityCall(loginJson.getTransferUrl(), HttpMethod.POST, data, false);
+            this.webState = ETradeUserState.LOGGED_IN;
             return ETradeUserState.LOGGED_IN;
         } else {
+            this.webState = ETradeUserState.LOGIN_FAILED;
             return ETradeUserState.LOGIN_FAILED;
         }
     }
