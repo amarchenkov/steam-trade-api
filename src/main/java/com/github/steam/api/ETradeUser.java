@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Пользователь стима от имени которого осуществляются действия
@@ -217,16 +218,6 @@ public class ETradeUser {
         }
     }
 
-//    public Map<String, String> getAuthCookie() {
-//        Map<String, String> authCookie = new HashMap<>();
-//        for (Cookie cookie : cookieStore.getCookies()) {
-//            if (cookie.getName().startsWith("steam")) {
-//                authCookie.put(cookie.getName(), cookie.getValue());
-//            }
-//        }
-//        return authCookie;
-//    }
-
     /**
      * Выполнить HTTP-запрос к официальному SteamWebAPI
      *
@@ -246,10 +237,7 @@ public class ETradeUser {
                     }
                     return IOUtils.toString(request(builder.build().toString(), HttpMethod.GET, null, null).getEntity().getContent());
                 case POST:
-                    List<NameValuePair> data = new ArrayList<>();
-                    for (Map.Entry<String, String> param : params.entrySet()) {
-                        data.add(new BasicNameValuePair(param.getKey(), param.getValue()));
-                    }
+                    List<NameValuePair> data = params.entrySet().stream().map(param -> new BasicNameValuePair(param.getKey(), param.getValue())).collect(Collectors.toList());
                     return IOUtils.toString(request(builder.build().toString(), HttpMethod.POST, data, null).getEntity().getContent());
                 default:
                     throw new IllegalStateException("Undefined http method");
