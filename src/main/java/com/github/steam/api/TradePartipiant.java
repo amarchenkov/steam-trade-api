@@ -3,7 +3,7 @@ package com.github.steam.api;
 import java.util.List;
 import java.util.Map;
 
-class ETradePartipiant {
+class TradePartipiant {
 
     private boolean ready;
     private List<CEconAsset> assets;

@@ -4,9 +4,9 @@ class CEconTradeStatus {
 
     private boolean newversion;
     private long version;
-    private ETradePartipiant me;
-    private ETradePartipiant them;
-    private transient ETradeOffer tradeOffer;
+    private TradePartipiant me;
+    private TradePartipiant them;
+    private transient CEconTradeOffer tradeOffer;
 
     public boolean isNewVersion() {
         return newversion;
@@ -16,11 +16,11 @@ class CEconTradeStatus {
         return version;
     }
 
-    public ETradePartipiant getMe() {
+    public TradePartipiant getMe() {
         return me;
     }
 
-    public ETradePartipiant getThem() {
+    public TradePartipiant getThem() {
         return them;
     }
 
@@ -32,19 +32,19 @@ class CEconTradeStatus {
         this.version = version;
     }
 
-    public void setMe(ETradePartipiant me) {
+    public void setMe(TradePartipiant me) {
         this.me = me;
     }
 
-    public void setThem(ETradePartipiant them) {
+    public void setThem(TradePartipiant them) {
         this.them = them;
     }
 
-    public ETradeOffer getTradeOffer() {
+    public CEconTradeOffer getTradeOffer() {
         return tradeOffer;
     }
 
-    public void setTradeOffer(ETradeOffer tradeOffer) {
+    public void setTradeOffer(CEconTradeOffer tradeOffer) {
         this.tradeOffer = tradeOffer;
     }
 

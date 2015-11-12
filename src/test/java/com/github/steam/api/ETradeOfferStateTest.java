@@ -1,5 +1,6 @@
 package com.github.steam.api;
 
+import com.github.steam.api.enumeration.ETradeOfferState;
 import org.junit.Test;
 
 import static junit.framework.TestCase.assertEquals;

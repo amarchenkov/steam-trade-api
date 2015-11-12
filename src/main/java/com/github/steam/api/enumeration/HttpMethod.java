@@ -1,11 +1,11 @@
-package com.github.steam.api;
+package com.github.steam.api.enumeration;
 
 /**
  * Enumeration of HTTP methods
  *
  * @author Andrey Marchenkov
  */
-enum HttpMethod {
+public enum HttpMethod {
     GET,
     POST,
 }

@@ -1,4 +1,4 @@
-package com.github.steam.api;
+package com.github.steam.api.enumeration;
 
 /**
  * Состояние предложения обмена

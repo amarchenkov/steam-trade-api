@@ -1,5 +1,6 @@
 package com.github.steam.api;
 
+import com.github.steam.api.enumeration.ETradeOfferState;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
@@ -12,7 +13,7 @@ import java.lang.reflect.Type;
  *
  * @author Andrey Marchenkov
  */
-class ETradeOfferStateAdapter implements JsonDeserializer<ETradeOfferState> {
+class TradeOfferStateAdapter implements JsonDeserializer<ETradeOfferState> {
 
     @Override
     public ETradeOfferState deserialize(JsonElement element, Type arg1, JsonDeserializationContext arg2) throws JsonParseException {

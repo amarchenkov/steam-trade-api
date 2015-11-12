@@ -1,5 +1,8 @@
 package com.github.steam.api;
 
+import com.github.steam.api.enumeration.ETradeOfferState;
+import com.github.steam.api.enumeration.HttpMethod;
+import com.github.steam.api.exception.IEconServiceException;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
@@ -19,7 +22,7 @@ import java.util.regex.Pattern;
  * @author Andrey Marchenkov
  */
 //TODO Навести порядок с сущностями
-public class ETradeOffer {
+class CEconTradeOffer {
 
     private transient String themInventoryLoadUrl;
     private transient String meInventoryLoadUrl;
@@ -85,12 +88,12 @@ public class ETradeOffer {
     /**
      * Steam-пользователь
      */
-    private transient ETradeUser tradeUser;
+    private transient TradeUser tradeUser;
 
-    public ETradeOffer() {
+    protected CEconTradeOffer() {
     }
 
-    protected ETradeOffer(ETradeUser tradeUser, int tradeOfferID, SteamID accountIDOther) throws Exception {
+    protected CEconTradeOffer(TradeUser tradeUser, int tradeOfferID, SteamID accountIDOther) throws Exception {
         this.tradeofferid = String.valueOf(tradeOfferID);
         this.accountid_other = accountIDOther.getCommunityId();
         this.tradeUser = tradeUser;
@@ -99,6 +102,10 @@ public class ETradeOffer {
         String html;
         if (tradeOfferID == 0) {
             html = tradeUser.doCommunityCall("https://steamcommunity.com/tradeoffer/new/?partner=" + accountIDOther.getAccountId(), HttpMethod.GET, null, false);
+            this.setIsOurOffer(true);
+            this.setTimeCreated(System.currentTimeMillis());
+            this.setTimeUpdated(System.currentTimeMillis());
+            this.setTradeOfferState(ETradeOfferState.k_ETradeOfferStateActive);
         } else {
             html = tradeUser.doCommunityCall("https://steamcommunity.com/tradeoffer/" + tradeOfferID + "/", HttpMethod.GET, null, false);
         }
@@ -112,7 +119,6 @@ public class ETradeOffer {
 
         this.tradeStatus = gson.fromJson(javascriptGlobals.get("g_rgCurrentTradeStatus"), CEconTradeStatus.class);
         this.tradeStatus.setTradeOffer(this);
-        this.setAccountIDOther(new SteamID(gson.fromJson(javascriptGlobals.get("g_ulTradePartnerSteamID"), Long.class)).getCommunityId());
         this.sessionId = gson.fromJson(javascriptGlobals.get("g_sessionID"), String.class);
         this.setMessage("");
 
@@ -263,9 +269,9 @@ public class ETradeOffer {
     public void accept() throws Exception {
         List<NameValuePair> data = new ArrayList<>();
         data.add(new BasicNameValuePair("sessionid", sessionId));
-        data.add(new BasicNameValuePair("tradeofferid", getTradeOfferID()));
+        data.add(new BasicNameValuePair("tradeofferid", this.getTradeOfferID()));
 
-        String result = tradeUser.doCommunityCall("https://steamcommunity.com/tradeoffer/" + getTradeOfferID() + "/accept", HttpMethod.POST, data, true);
+        String result = tradeUser.doCommunityCall("https://steamcommunity.com/tradeoffer/" + this.getTradeOfferID() + "/accept", HttpMethod.POST, data, true);
         // TODO: parse/return the result
     }
 
@@ -273,9 +279,9 @@ public class ETradeOffer {
      * Отклонение предложения обмена
      * После вызова дальнейшее использование объекта невозможно
      *
-     * @throws ETradeException
+     * @throws IEconServiceException
      */
-    public void decline() throws ETradeException {
+    public void decline() throws IEconServiceException {
         Map<String, String> params = new HashMap<>();
         params.put("tradeofferid", String.valueOf(getTradeOfferID()));
         String result = tradeUser.doAPICall("DeclineTradeOffer/v1", HttpMethod.POST, params);
@@ -284,7 +290,6 @@ public class ETradeOffer {
     public CEconTradeStatus getTradeStatus() {
         return tradeStatus;
     }
-
 
     @Override
     public String toString() {

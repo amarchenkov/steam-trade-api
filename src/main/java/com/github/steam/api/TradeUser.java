@@ -1,10 +1,16 @@
 package com.github.steam.api;
 
+import com.github.steam.api.enumeration.ETradeOfferState;
+import com.github.steam.api.enumeration.HttpMethod;
+import com.github.steam.api.exception.*;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import org.apache.commons.io.IOUtils;
-import org.apache.http.*;
+import org.apache.http.Consts;
+import org.apache.http.HttpRequest;
+import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
 import org.apache.http.client.CookieStore;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpGet;
@@ -26,6 +32,7 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 import java.math.BigInteger;
 import java.net.URISyntaxException;
+import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.PublicKey;
 import java.security.spec.RSAPublicKeySpec;
@@ -40,9 +47,9 @@ import java.util.stream.Collectors;
  *
  * @author Andrey Marchenkov
  */
-public class ETradeUser {
+public class TradeUser {
 
-    private static final Logger LOG = LogManager.getLogger(ETradeUser.class);
+    private static final Logger LOG = LogManager.getLogger(TradeUser.class);
 
     /**
      * URL официального API
@@ -53,14 +60,12 @@ public class ETradeUser {
     private CloseableHttpClient httpClient;
     private Gson gson;
     private String webApiKey;
-    private ETradeUserState webState;
     private CEconLoginResponse loginJson;
 
-    public ETradeUser(String webApiKey) {
+    public TradeUser(String webApiKey) {
         this.webApiKey = webApiKey;
-        this.webState = ETradeUserState.NOT_LOGGED_IN;
         this.cookieStore = new BasicCookieStore();
-        this.gson = new GsonBuilder().registerTypeAdapter(ETradeOfferState.class, new ETradeOfferStateAdapter()).create();
+        this.gson = new GsonBuilder().registerTypeAdapter(ETradeOfferState.class, new TradeOfferStateAdapter()).create();
         this.httpClient = HttpClients.custom().setDefaultCookieStore(this.cookieStore).build();
     }
 
@@ -69,15 +74,15 @@ public class ETradeUser {
      *
      * @param params Список параметров
      * @return Список CEconTradeOffer
-     * @throws ETradeException
+     * @throws IEconServiceException
      */
-    public List<ETradeOffer> getTradeOffers(Map<String, String> params) throws ETradeException {
+    public List<CEconTradeOffer> getTradeOffers(Map<String, String> params) throws IEconServiceException {
         if (!params.containsKey("get_sent_offers") && !params.containsKey("get_received_offers")) {
             params.put("get_received_offers", "true");
             params.put("get_sent_offers", "true");
         }
         String result = doAPICall("GetTradeOffers/v1", HttpMethod.GET, params);
-        Type listType = new TypeToken<ArrayList<ETradeOffer>>() {
+        Type listType = new TypeToken<ArrayList<CEconTradeOffer>>() {
         }.getType();
         return gson.fromJson(result, listType);
     }
@@ -89,21 +94,21 @@ public class ETradeUser {
      * @param language     Язык
      * @return CEconTradeOffer
      */
-    public ETradeOffer getTradeOffer(String tradeOfferID, String language) throws ETradeException {
+    public CEconTradeOffer getTradeOffer(String tradeOfferID, String language) throws IEconServiceException {
         Map<String, String> params = new HashMap<>();
         params.put("tradeofferid", tradeOfferID);
         params.put("language", language);
         String result = doAPICall("GetTradeOffer/v1", HttpMethod.GET, params);
-        return gson.fromJson(result, ETradeOffer.class);
+        return gson.fromJson(result, CEconTradeOffer.class);
     }
 
     /**
      * Отменить исходящее предложение обмена
      *
      * @param tradeOfferID Идентификатор предложения обмена
-     * @throws ETradeException
+     * @throws IEconServiceException
      */
-    public void cancelTradeOffer(String tradeOfferID) throws ETradeException {
+    public void cancelTradeOffer(String tradeOfferID) throws IEconServiceException {
         Map<String, String> params = new HashMap<>();
         params.put("tradeofferid", tradeOfferID);
         String result = doAPICall("CancelTradeOffer/v1", HttpMethod.POST, params);
@@ -116,8 +121,8 @@ public class ETradeUser {
      * @return SteamTrade - экземпляр
      * @throws Exception
      */
-    public ETradeOffer makeOffer(SteamID partner) throws Exception {
-        return new ETradeOffer(this, 0, partner);
+    public CEconTradeOffer makeOffer(SteamID partner) throws Exception {
+        return new CEconTradeOffer(this, 0, partner);
     }
 
     /**
@@ -126,7 +131,7 @@ public class ETradeUser {
      * @return Список CEconTradeOffer
      * @throws IOException
      */
-    public List<ETradeOffer> getOutcomingTradeOffers() throws IOException, ETradeException {
+    public List<CEconTradeOffer> getOutcomingTradeOffers() throws IOException, IEconServiceException {
         Map<String, String> params = new HashMap<>();
         params.put("get_sent_offers", "true");
         return this.getTradeOffers(params);
@@ -138,23 +143,14 @@ public class ETradeUser {
      * @return Список CEconTradeOffer
      * @throws IOException
      */
-    public List<ETradeOffer> getIncomingTradeOffers() throws IOException, ETradeException {
+    public List<CEconTradeOffer> getIncomingTradeOffers() throws IOException, IEconServiceException {
         Map<String, String> params = new HashMap<>();
         params.put("get_received_offers", "true");
         return this.getTradeOffers(params);
     }
 
-    /**
-     * Получить состояние веб-авторизации
-     *
-     * @return SteamUserState
-     */
-    public ETradeUserState getWebState() {
-        return this.webState;
-    }
-
-    public ETradeUserState login(String username, String password) throws Exception {
-        return this.login(username, password, null, null);
+    public void login(String username, String password) throws Exception {
+        this.login(username, password, null, null);
     }
 
     /**
@@ -163,15 +159,15 @@ public class ETradeUser {
      * @param username Имя пользователя
      * @param password Пароль пользователя
      */
-    public ETradeUserState login(String username, String password, String steamGuardText, String capText) throws Exception {
+    public void login(String username, String password, String steamGuardText, String capText)
+            throws GeneralSecurityException, IOException, GettingRsaException, CaptchaRequiredException, GuardRequiredException, LoginFailedException {
         List<NameValuePair> data = new ArrayList<>();
         data.add(new BasicNameValuePair("username", username));
         String response = doCommunityCall("https://steamcommunity.com/login/getrsakey", HttpMethod.POST, data, false);
         CEconRsaKeyResponse rsaKeyResponse = gson.fromJson(response, CEconRsaKeyResponse.class);
 
         if (!rsaKeyResponse.isSuccess()) {
-            this.webState = ETradeUserState.GET_RSA_FAILED;
-            return ETradeUserState.GET_RSA_FAILED;
+            throw new GettingRsaException();
         }
 
         BigInteger mod = new BigInteger(rsaKeyResponse.getPublickeyMod(), 16);
@@ -197,16 +193,13 @@ public class ETradeUser {
         this.loginJson = gson.fromJson(webResponse, CEconLoginResponse.class);
 
         if (loginJson.isCaptchaNeeded()) {
-            LOG.info("SteamWeb: Captcha is needed.");
-            LOG.info("https://steamcommunity.com/public/captcha.php?gid=" + loginJson.getCaptchaGid());
-            this.webState = ETradeUserState.CAPTCHA_NEEDE;
-            return ETradeUserState.CAPTCHA_NEEDE;
+            LOG.info("SteamWeb: Captcha is needed. https://steamcommunity.com/public/captcha.php?gid=" + loginJson.getCaptchaGid());
+            throw new CaptchaRequiredException();
         }
 
         if (loginJson.isEmailAuthNeeded()) {
             LOG.info("SteamWeb: SteamGuard is needed.");
-            this.webState = ETradeUserState.STEAM_GUARD_NEEDED;
-            return ETradeUserState.STEAM_GUARD_NEEDED;
+            throw new GuardRequiredException();
         }
 
         if (loginJson.isSuccess()) {
@@ -215,11 +208,8 @@ public class ETradeUser {
                 data.add(new BasicNameValuePair(stringStringEntry.getKey(), stringStringEntry.getValue()));
             }
             doCommunityCall(loginJson.getTransferUrl(), HttpMethod.POST, data, false);
-            this.webState = ETradeUserState.LOGGED_IN;
-            return ETradeUserState.LOGGED_IN;
         } else {
-            this.webState = ETradeUserState.LOGIN_FAILED;
-            return ETradeUserState.LOGIN_FAILED;
+            throw new LoginFailedException();
         }
     }
 
@@ -230,7 +220,7 @@ public class ETradeUser {
      * @param params     Параметры запроса в виде карты "параметр" => "значение"
      * @param httpMethod POST или GET запрос
      */
-    protected String doAPICall(String method, HttpMethod httpMethod, Map<String, String> params) throws ETradeException {
+    protected String doAPICall(String method, HttpMethod httpMethod, Map<String, String> params) throws IEconServiceException {
         try {
             URIBuilder builder = new URIBuilder(apiUrl + method);
             builder.setParameter("key", this.webApiKey);
@@ -248,9 +238,9 @@ public class ETradeUser {
                     throw new IllegalStateException("Undefined http method");
             }
         } catch (URISyntaxException e) {
-            throw new ETradeException("Invalid API URI", e);
+            throw new IEconServiceException("Invalid API URI", e);
         } catch (IOException e) {
-            throw new ETradeException("HTTP Requset exception", e);
+            throw new IEconServiceException("HTTP Requset exception", e);
         }
     }
 
