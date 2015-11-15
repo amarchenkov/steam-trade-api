@@ -9,25 +9,13 @@ public class CEconAsset {
 
     private long appid;
     private long contextid;
-
-    /**
-     * either assetid or currencyid will be set
-     */
     private long assetid;
-
-    /**
-     * either assetid or currencyid will be set
-     */
     private String currencyid;
 
     /**
      * together with instanceid, uniquely identifies the display of the item
      */
     private String classid;
-
-    /**
-     * together with classid, uniquely identifies the display of the item
-     */
     private String instanceid;
 
     /**

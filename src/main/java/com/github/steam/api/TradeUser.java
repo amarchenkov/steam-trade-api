@@ -26,15 +26,18 @@ import org.apache.http.message.BasicNameValuePair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import javax.xml.bind.DatatypeConverter;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Type;
 import java.math.BigInteger;
 import java.net.URISyntaxException;
-import java.security.GeneralSecurityException;
-import java.security.KeyFactory;
-import java.security.PublicKey;
+import java.security.*;
+import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPublicKeySpec;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -161,26 +164,10 @@ public class TradeUser {
      */
     public void login(String username, String password, String steamGuardText, String capText)
             throws GeneralSecurityException, IOException, GettingRsaException, CaptchaRequiredException, GuardRequiredException, LoginFailedException {
+        CEconRsaKeyResponse rsaKeyResponse = this.getRSAKey(username);
+        String encryptedBase64Password = this.getEncryptedPassword(password, rsaKeyResponse);
+
         List<NameValuePair> data = new ArrayList<>();
-        data.add(new BasicNameValuePair("username", username));
-        String response = doCommunityCall("https://steamcommunity.com/login/getrsakey", HttpMethod.POST, data, false);
-        CEconRsaKeyResponse rsaKeyResponse = gson.fromJson(response, CEconRsaKeyResponse.class);
-
-        if (!rsaKeyResponse.isSuccess()) {
-            throw new GettingRsaException();
-        }
-
-        BigInteger mod = new BigInteger(rsaKeyResponse.getPublickeyMod(), 16);
-        BigInteger exp = new BigInteger(rsaKeyResponse.getPublickeyExp(), 16);
-        RSAPublicKeySpec spec = new RSAPublicKeySpec(mod, exp);
-        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-        PublicKey key = keyFactory.generatePublic(spec);
-        Cipher rsa = Cipher.getInstance("RSA");
-        rsa.init(Cipher.ENCRYPT_MODE, key);
-        byte[] encodedPassword = rsa.doFinal(password.getBytes("ASCII"));
-        String encryptedBase64Password = DatatypeConverter.printBase64Binary(encodedPassword);
-
-        data = new ArrayList<>();
         data.add(new BasicNameValuePair("password", encryptedBase64Password));
         data.add(new BasicNameValuePair("username", username));
         data.add(new BasicNameValuePair("captchagid", loginJson == null ? "-1" : loginJson.getCaptchaGid()));
@@ -211,6 +198,47 @@ public class TradeUser {
         } else {
             throw new LoginFailedException();
         }
+    }
+
+    /**
+     * Получить заштфрованный по ранее полученному ключу пароль
+     *
+     * @param password       Пароль
+     * @param rsaKeyResponse Полученный ключ
+     * @return Зашифрованный пароль
+     * @throws GeneralSecurityException
+     * @throws UnsupportedEncodingException
+     */
+    private String getEncryptedPassword(String password, CEconRsaKeyResponse rsaKeyResponse) throws GeneralSecurityException, UnsupportedEncodingException {
+        BigInteger mod = new BigInteger(rsaKeyResponse.getPublickeyMod(), 16);
+        BigInteger exp = new BigInteger(rsaKeyResponse.getPublickeyExp(), 16);
+        RSAPublicKeySpec spec = new RSAPublicKeySpec(mod, exp);
+        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+        PublicKey key = keyFactory.generatePublic(spec);
+        Cipher rsa = Cipher.getInstance("RSA");
+        rsa.init(Cipher.ENCRYPT_MODE, key);
+        byte[] encodedPassword = rsa.doFinal(password.getBytes("ASCII"));
+        return DatatypeConverter.printBase64Binary(encodedPassword);
+    }
+
+    /**
+     * Получить ключ RSA
+     *
+     * @param username Имя пользователя
+     * @return Структура CEconRsaKeyResponse
+     * @throws IOException
+     * @throws GettingRsaException
+     */
+    private CEconRsaKeyResponse getRSAKey(String username) throws IOException, GettingRsaException {
+        List<NameValuePair> data = new ArrayList<>();
+        data.add(new BasicNameValuePair("username", username));
+        String response = doCommunityCall("https://steamcommunity.com/login/getrsakey", HttpMethod.POST, data, false);
+        CEconRsaKeyResponse rsaKeyResponse = gson.fromJson(response, CEconRsaKeyResponse.class);
+
+        if (!rsaKeyResponse.isSuccess()) {
+            throw new GettingRsaException();
+        }
+        return rsaKeyResponse;
     }
 
     /**
