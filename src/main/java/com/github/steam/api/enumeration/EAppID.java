@@ -12,7 +12,7 @@ public enum EAppID {
     TF2(440, "Team Fortress 2"),
     STEAM(753, "Steam");
 
-    private int appID;
+    private long appID;
     private String appName;
 
     EAppID(int appID, String appName) {
@@ -20,7 +20,7 @@ public enum EAppID {
         this.appName = appName;
     }
 
-    public int getAppID() {
+    public long getAppID() {
         return this.appID;
     }
 

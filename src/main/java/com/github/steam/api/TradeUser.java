@@ -26,18 +26,16 @@ import org.apache.http.message.BasicNameValuePair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
 import javax.xml.bind.DatatypeConverter;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Type;
 import java.math.BigInteger;
 import java.net.URISyntaxException;
-import java.security.*;
-import java.security.spec.InvalidKeySpecException;
+import java.security.GeneralSecurityException;
+import java.security.KeyFactory;
+import java.security.PublicKey;
 import java.security.spec.RSAPublicKeySpec;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -58,6 +56,7 @@ public class TradeUser {
      * URL официального API
      */
     protected static final String apiUrl = "https://api.steampowered.com/IEconService/";
+//    protected static final String apiUrl = "http://localhost/";
 
     private CookieStore cookieStore;
     private CloseableHttpClient httpClient;
@@ -97,9 +96,9 @@ public class TradeUser {
      * @param language     Язык
      * @return CEconTradeOffer
      */
-    public CEconTradeOffer getTradeOffer(String tradeOfferID, String language) throws IEconServiceException {
+    public CEconTradeOffer getTradeOffer(long tradeOfferID, String language) throws IEconServiceException {
         Map<String, String> params = new HashMap<>();
-        params.put("tradeofferid", tradeOfferID);
+        params.put("tradeofferid", String.valueOf(tradeOfferID));
         params.put("language", language);
         String result = doAPICall("GetTradeOffer/v1", HttpMethod.GET, params);
         return gson.fromJson(result, CEconTradeOffer.class);
@@ -125,7 +124,7 @@ public class TradeUser {
      * @throws Exception
      */
     public CEconTradeOffer makeOffer(SteamID partner) throws Exception {
-        return new CEconTradeOffer(this, 0, partner);
+        return new CEconTradeOffer(this, partner);
     }
 
     /**

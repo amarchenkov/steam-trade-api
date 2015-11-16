@@ -2,6 +2,7 @@ package com.github.steam.api;
 
 import java.util.HashMap;
 
+//TODO Поменять CEconInventoryItem на CEconAsset
 class CEconInventory {
 
     private boolean success;

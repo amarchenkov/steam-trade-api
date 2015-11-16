@@ -13,7 +13,7 @@ public enum EContextID {
     COMMUNITY(6, "Community"),
     ITEM_REWARD(7, "Item reward"),;
 
-    private int contextID;
+    private long contextID;
     private String contextName;
 
     EContextID(int contextID, String contextName) {
@@ -21,7 +21,7 @@ public enum EContextID {
         this.contextName = contextName;
     }
 
-    public int getContextID() {
+    public long getContextID() {
         return this.contextID;
     }
 
