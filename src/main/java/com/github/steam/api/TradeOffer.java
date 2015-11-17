@@ -178,8 +178,7 @@ public class TradeOffer {
     public void decline() throws IEconServiceException {
         Map<String, String> params = new HashMap<>();
         params.put("tradeofferid", String.valueOf(this.tradeOfferData.getTradeOfferID()));
-        String result = tradeUser.doAPICall("DeclineTradeOffer/v1", HttpMethod.POST, params);
-        //TODO Parse result
+        tradeUser.doAPICall("DeclineTradeOffer/v1", HttpMethod.POST, params);
     }
 
     public void addItemsToGive(CEconAsset itemToGive) {

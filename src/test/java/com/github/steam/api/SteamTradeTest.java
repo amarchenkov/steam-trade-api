@@ -18,7 +18,7 @@ public class SteamTradeTest {
 
         CEconInventory inv = tradeOffer.getTheirInventory(EAppID.DOTA2, EContextID.BACKPACK);
 
-        TradeOffer to = steamTrade.getTradeOffer(853093299L, "RU");
+        steamTrade.cancelTradeOffer(853093299L);
 //        List<CEconTradeOffer> list = steamTrade.getIncomingTradeOffers();
     }
 
