@@ -5,6 +5,7 @@ import java.util.List;
 class CEconTradePartipiant {
 
     private boolean ready;
+
     private List<CEconAsset> assets;
 
     public boolean isReady() {

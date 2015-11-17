@@ -26,7 +26,7 @@ class CEconAsset {
     /**
      * a boolean that indicates the item is no longer present in the user's inventory
      */
-    private boolean missing;//
+    private boolean missing;
 
     public long getAppID() {
         return appid;

@@ -127,7 +127,7 @@ public class TradeUser {
      * @param tradeOfferID Идентификатор предложения обмена
      * @throws IEconServiceException
      */
-    public void cancelTradeOffer(Long tradeOfferID) throws IEconServiceException {
+    public void cancelTradeOffer(long tradeOfferID) throws IEconServiceException {
         Map<String, String> params = new HashMap<>();
         params.put("tradeofferid", String.valueOf(tradeOfferID));
         this.doAPICall("CancelTradeOffer/v1", HttpMethod.POST, params);
