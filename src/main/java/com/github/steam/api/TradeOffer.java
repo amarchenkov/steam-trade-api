@@ -21,6 +21,11 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Модель предложения обмена
+ *
+ * @author Andrey Marchenkov
+ */
 public class TradeOffer {
 
     private static final Log LOG = LogFactory.getLog(TradeOffer.class);
@@ -176,4 +181,21 @@ public class TradeOffer {
         String result = tradeUser.doAPICall("DeclineTradeOffer/v1", HttpMethod.POST, params);
         //TODO Parse result
     }
+
+    public void addItemsToGive(CEconAsset itemToGive) {
+        this.tradeOfferData.addItemsToGive(itemToGive);
+    }
+
+    public void addItemsToReceive(CEconAsset itemToReceive) {
+        this.tradeOfferData.addItemsToReceive(itemToReceive);
+    }
+
+    public void removeItemsToGive(CEconAsset itemToGive) {
+        this.tradeOfferData.getItemsToGive().remove(itemToGive);
+    }
+
+    public void removeItemsToReceive(CEconAsset itemToReceive) {
+        this.tradeOfferData.getItemsToReceive().remove(itemToReceive);
+    }
+
 }

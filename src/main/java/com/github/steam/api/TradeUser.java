@@ -1,5 +1,6 @@
 package com.github.steam.api;
 
+import com.github.steam.api.adapter.GetOfferAdapter;
 import com.github.steam.api.adapter.TradeOfferStateAdapter;
 import com.github.steam.api.enumeration.ETradeOfferState;
 import com.github.steam.api.enumeration.HttpMethod;
@@ -53,23 +54,32 @@ public class TradeUser {
 
     private static final Logger LOG = LogManager.getLogger(TradeUser.class);
 
-    /**
-     * URL официального API
-     */
     protected static final String apiUrl = "https://api.steampowered.com/IEconService/";
 //    protected static final String apiUrl = "http://localhost/";
 
-    private CookieStore cookieStore;
+    private static CookieStore cookieStore = new BasicCookieStore();
     private CloseableHttpClient httpClient;
     private Gson gson;
     private String webApiKey;
     private CEconLoginResponse loginJson;
 
-    public TradeUser(String webApiKey) {
+    private TradeUser(String webApiKey) {
         this.webApiKey = webApiKey;
-        this.cookieStore = new BasicCookieStore();
-        this.gson = new GsonBuilder().registerTypeAdapter(ETradeOfferState.class, new TradeOfferStateAdapter()).create();
-        this.httpClient = HttpClients.custom().setDefaultCookieStore(this.cookieStore).build();
+        this.gson = new GsonBuilder()
+                .registerTypeAdapter(ETradeOfferState.class, new TradeOfferStateAdapter())
+                .registerTypeAdapter(CEconTradeOffer.class, new GetOfferAdapter())
+                .create();
+        this.httpClient = HttpClients.custom().setDefaultCookieStore(cookieStore).build();
+    }
+
+    public TradeUser(String webApiKey, String username, String password) throws GeneralSecurityException, GettingRsaException, IOException, LoginFailedException, GuardRequiredException, CaptchaRequiredException {
+        this(webApiKey);
+        this.login(username, password);
+    }
+
+    public TradeUser(String webApiKey, String username, String password, String steamGuardText, String capText) throws GeneralSecurityException, GettingRsaException, IOException, LoginFailedException, GuardRequiredException, CaptchaRequiredException {
+        this(webApiKey);
+        this.login(username, password, steamGuardText, capText);
     }
 
     /**
@@ -85,7 +95,8 @@ public class TradeUser {
             params.put("get_sent_offers", "true");
         }
         String result = this.doAPICall("GetTradeOffers/v1", HttpMethod.GET, params);
-        Type listType = new TypeToken<ArrayList<TradeOffer>>() {}.getType();
+        Type listType = new TypeToken<ArrayList<TradeOffer>>() {
+        }.getType();
         List<CEconTradeOffer> tradeOffersData = gson.fromJson(result, listType);
         List<TradeOffer> tradeOffers = new ArrayList<>();
         for (CEconTradeOffer tradeOfferData : tradeOffersData) {
@@ -105,7 +116,7 @@ public class TradeUser {
         Map<String, String> params = new HashMap<>();
         params.put("tradeofferid", String.valueOf(tradeOfferID));
         params.put("language", language);
-        String result = doAPICall("GetTradeOffer/v1", HttpMethod.GET, params);
+        String result = this.doAPICall("GetTradeOffer/v1", HttpMethod.GET, params);
         CEconTradeOffer tradeOfferData = gson.fromJson(result, CEconTradeOffer.class);
         return new TradeOffer(this, tradeOfferData);
     }
@@ -119,7 +130,7 @@ public class TradeUser {
     public void cancelTradeOffer(String tradeOfferID) throws IEconServiceException {
         Map<String, String> params = new HashMap<>();
         params.put("tradeofferid", tradeOfferID);
-        String result = doAPICall("CancelTradeOffer/v1", HttpMethod.POST, params);
+        String result = this.doAPICall("CancelTradeOffer/v1", HttpMethod.POST, params);
     }
 
     /**
@@ -157,7 +168,7 @@ public class TradeUser {
         return this.getTradeOffers(params);
     }
 
-    public void login(String username, String password) throws Exception {
+    private void login(String username, String password) throws GeneralSecurityException, IOException, GettingRsaException, CaptchaRequiredException, GuardRequiredException, LoginFailedException {
         this.login(username, password, null, null);
     }
 
@@ -167,7 +178,7 @@ public class TradeUser {
      * @param username Имя пользователя
      * @param password Пароль пользователя
      */
-    public void login(String username, String password, String steamGuardText, String capText)
+    private void login(String username, String password, String steamGuardText, String capText)
             throws GeneralSecurityException, IOException, GettingRsaException, CaptchaRequiredException, GuardRequiredException, LoginFailedException {
         CEconRsaKeyResponse rsaKeyResponse = this.getRSAKey(username);
         String encryptedBase64Password = this.getEncryptedPassword(password, rsaKeyResponse);
@@ -181,7 +192,7 @@ public class TradeUser {
         data.add(new BasicNameValuePair("emailsteamid", loginJson == null ? "" : loginJson.getEmailSteamID()));
 
         data.add(new BasicNameValuePair("rsatimestamp", rsaKeyResponse.getTimestamp()));
-        String webResponse = doCommunityCall("https://steamcommunity.com/login/dologin/", HttpMethod.POST, data, false);
+        String webResponse = this.doCommunityCall("https://steamcommunity.com/login/dologin/", HttpMethod.POST, data, false);
         this.loginJson = gson.fromJson(webResponse, CEconLoginResponse.class);
 
         if (loginJson.isCaptchaNeeded()) {
@@ -199,7 +210,7 @@ public class TradeUser {
             for (Map.Entry<String, String> stringStringEntry : loginJson.getTransferParameters().entrySet()) {
                 data.add(new BasicNameValuePair(stringStringEntry.getKey(), stringStringEntry.getValue()));
             }
-            doCommunityCall(loginJson.getTransferUrl(), HttpMethod.POST, data, false);
+            this.doCommunityCall(loginJson.getTransferUrl(), HttpMethod.POST, data, false);
         } else {
             throw new LoginFailedException();
         }
@@ -237,7 +248,7 @@ public class TradeUser {
     private CEconRsaKeyResponse getRSAKey(String username) throws IOException, GettingRsaException {
         List<NameValuePair> data = new ArrayList<>();
         data.add(new BasicNameValuePair("username", username));
-        String response = doCommunityCall("https://steamcommunity.com/login/getrsakey", HttpMethod.POST, data, false);
+        String response = this.doCommunityCall("https://steamcommunity.com/login/getrsakey", HttpMethod.POST, data, false);
         CEconRsaKeyResponse rsaKeyResponse = gson.fromJson(response, CEconRsaKeyResponse.class);
 
         if (!rsaKeyResponse.isSuccess()) {
@@ -308,7 +319,7 @@ public class TradeUser {
      *
      * @param cookie Объект cookie
      */
-    public void addCookie(Cookie cookie) {
+    public static void addCookie(Cookie cookie) {
         cookieStore.addCookie(cookie);
     }
 
@@ -319,13 +330,13 @@ public class TradeUser {
      * @param value  Значение
      * @param secure Флаг защищенности
      */
-    public void addCookie(String name, String value, boolean secure) {
+    public static void addCookie(String name, String value, boolean secure) {
         BasicClientCookie cookie = new BasicClientCookie(name, value);
         cookie.setVersion(0);
         cookie.setDomain("steamcommunity.com");
         cookie.setPath("/");
         cookie.setSecure(secure);
-        this.addCookie(cookie);
+        TradeUser.addCookie(cookie);
     }
 
     /**
