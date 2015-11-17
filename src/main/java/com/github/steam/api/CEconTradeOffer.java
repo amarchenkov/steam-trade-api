@@ -1,38 +1,14 @@
 package com.github.steam.api;
 
-import com.github.steam.api.enumeration.EAppID;
-import com.github.steam.api.enumeration.EContextID;
 import com.github.steam.api.enumeration.ETradeOfferState;
-import com.github.steam.api.enumeration.HttpMethod;
-import com.github.steam.api.exception.IEconServiceException;
-import com.google.gson.Gson;
-import org.apache.http.NameValuePair;
-import org.apache.http.client.utils.URIBuilder;
-import org.apache.http.message.BasicNameValuePair;
 
-import java.io.IOException;
-import java.net.URI;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
- * Структура, возвращаемая методами GetTradeOffers и GetTradeOffer
- *
  * @author Andrey Marchenkov
  */
-class CEconTradeOffer {
-
-
-    //TODO Убрать геттеры и сеттеры для private-свойств
-    private transient boolean newOrder;
-    private transient TradeUser tradeUser;
-    private transient String themInventoryLoadUrl;
-    private transient String meInventoryLoadUrl;
-    private transient String sessionId;
+public class CEconTradeOffer {
 
     /**
      * Уникальный идентификатор предложения обмена
@@ -87,48 +63,11 @@ class CEconTradeOffer {
     private long time_updated;
 
     /**
-     * Boolean to indicate this is an offer automatically created from a real-time trade
+     * Флаг указывающий, что предложение создано автоматически в реальном времени
      */
     private boolean from_real_time_trade;
 
-
-    protected CEconTradeOffer() throws IOException {
-        this.setNewOrder(false);
-    }
-
-    protected CEconTradeOffer(TradeUser tradeUser, SteamID partnerID) throws Exception {
-        this.setNewOrder(true);
-        this.setAccountIDOther(partnerID.getCommunityId());
-        this.setTradeUser(tradeUser);
-
-        String html = tradeUser.doCommunityCall("https://steamcommunity.com/tradeoffer/new/?partner=" + partnerID.getAccountId(), HttpMethod.GET, null, false);
-        this.setIsOurOffer(true);
-        this.setTimeCreated(System.currentTimeMillis());
-        this.setTimeUpdated(System.currentTimeMillis());
-        this.setTradeOfferState(ETradeOfferState.k_ETradeOfferStateActive);
-
-        initializeWeb(html);
-    }
-
-    /**
-     * Инициализация Web части
-     *
-     * @param html Код страницы
-     */
-    private void initializeWeb(String html) {
-        Gson gson = new Gson();
-        Pattern pattern = Pattern.compile("^\\s*var\\s+(g_.+?)\\s+=\\s+(.+?);\\r?$", Pattern.MULTILINE);
-        Matcher matcher = pattern.matcher(html);
-        Map<String, String> javascriptGlobals = new HashMap<>();
-        while (matcher.find()) {
-            javascriptGlobals.put(matcher.group(1), matcher.group(2));
-        }
-
-        this.sessionId = gson.fromJson(javascriptGlobals.get("g_sessionID"), String.class);
-        this.setMessage("");
-
-        this.meInventoryLoadUrl = gson.fromJson(javascriptGlobals.get("g_strInventoryLoadURL"), String.class);
-        this.themInventoryLoadUrl = gson.fromJson(javascriptGlobals.get("g_strTradePartnerInventoryLoadURL"), String.class);
+    public CEconTradeOffer() {
     }
 
     public long getTradeOfferID() {
@@ -219,135 +158,6 @@ class CEconTradeOffer {
         this.from_real_time_trade = from_real_time_trade;
     }
 
-    public boolean isNewOrder() {
-        return newOrder;
-    }
-
-    public void setNewOrder(boolean newOrder) {
-        this.newOrder = newOrder;
-    }
-
-    private TradeUser getTradeUser() {
-        return tradeUser;
-    }
-
-    public void setTradeUser(TradeUser tradeUser) {
-        this.tradeUser = tradeUser;
-    }
-
-    /**
-     * Получить содержимое инвентаря авторизованного пользователя Steam
-     *
-     * @param appID     Идентификатор приложения
-     * @param contextID Тип предмета
-     * @return Инвентарь
-     * @throws Exception
-     */
-    public CEconInventory getMyInventory(EAppID appID, EContextID contextID) throws Exception {
-        this.check();
-        return new Gson()
-                .fromJson(tradeUser.doCommunityCall(this.meInventoryLoadUrl + appID + "/" + contextID + "/?trading=1",
-                        HttpMethod.GET, null, true), CEconInventory.class);
-    }
-
-    /**
-     * Получить содержимое инвентаря другого пользователя
-     *
-     * @param appID     Идентификатор приложения
-     * @param contextID Тип предмета
-     * @return Инвентарь
-     * @throws Exception
-     */
-    public CEconInventory getTheirInventory(EAppID appID, EContextID contextID) throws Exception {
-        this.check();
-        URI uri = new URIBuilder(this.themInventoryLoadUrl)
-                .setParameter("sessionid", sessionId)
-                .setParameter("partner", String.valueOf(this.getAccountIDOther()))
-                .setParameter("appid", Long.toString(appID.getAppID()))
-                .setParameter("contextid", Long.toString(contextID.getContextID()))
-                .build();
-
-        return new Gson().fromJson(tradeUser.doCommunityCall(uri.toString(), HttpMethod.GET, null, true), CEconInventory.class);
-    }
-
-    /**
-     * Отправить новое предложение обмена или контрпредложение
-     *
-     * @throws Exception
-     */
-    public void send() throws Exception {
-        this.check();
-        CEconTradePartipiant me = new CEconTradePartipiant();
-        me.setReady(true);
-        me.setAssets(this.getItemsToGive());
-
-        CEconTradePartipiant partner = new CEconTradePartipiant();
-        partner.setReady(false);
-        partner.setAssets(this.getItemsToReceive());
-
-        CEconTradeStatus tradeStatus = new CEconTradeStatus();
-        tradeStatus.setNewVersion(true);
-        tradeStatus.setVersion(this.getTradeOfferID());
-        tradeStatus.setMe(me);
-        tradeStatus.setThem(partner);
-
-        Gson gson = new Gson();
-        List<NameValuePair> data = new ArrayList<>();
-        data.add(new BasicNameValuePair("sessionid", sessionId));
-        data.add(new BasicNameValuePair("partner", Long.toString(this.getAccountIDOther())));
-        data.add(new BasicNameValuePair("tradeoffermessage", this.getMessage()));
-        data.add(new BasicNameValuePair("json_tradeoffer", gson.toJson(tradeStatus)));
-        if (getTradeOfferID() != 0) {
-            data.add(new BasicNameValuePair("tradeofferid_countered", String.valueOf(this.getTradeOfferID())));
-        }
-        String result = tradeUser.doCommunityCall("https://steamcommunity.com/tradeoffer/new/send", HttpMethod.POST, data, true);
-        // TODO: parse/return the result
-    }
-
-    /**
-     * Принять предложение обмена
-     * После вызова дальнейшее использование объекта невозможно
-     *
-     * @throws Exception
-     */
-    public void accept() throws Exception {
-        this.check();
-        List<NameValuePair> data = new ArrayList<>();
-        data.add(new BasicNameValuePair("sessionid", this.sessionId));
-        data.add(new BasicNameValuePair("tradeofferid", String.valueOf(this.getTradeOfferID())));
-
-        String result = tradeUser.doCommunityCall("https://steamcommunity.com/tradeoffer/" + this.getTradeOfferID() + "/accept", HttpMethod.POST, data, true);
-        // TODO: parse/return the result
-    }
-
-    /**
-     * Отклонение предложения обмена
-     * После вызова дальнейшее использование объекта невозможно
-     *
-     * @throws IEconServiceException
-     */
-    public void decline() throws IEconServiceException {
-        Map<String, String> params = new HashMap<>();
-        params.put("tradeofferid", String.valueOf(getTradeOfferID()));
-        String result = tradeUser.doAPICall("DeclineTradeOffer/v1", HttpMethod.POST, params);
-    }
-
-    /**
-     * Проверка перед выполнением методов связанных с Web
-     *
-     * @throws IOException
-     * @throws IEconServiceException
-     */
-    private void check() throws IOException, IEconServiceException {
-        if (this.getTradeUser() == null) {
-            throw new IEconServiceException("Steam user for trading is not found");
-        }
-        if (!this.isNewOrder()) {
-            String html = this.getTradeUser().doCommunityCall("https://steamcommunity.com/tradeoffer/" + this.getTradeOfferID() + "/", HttpMethod.GET, null, false);
-            this.initializeWeb(html);
-        }
-    }
-
     @Override
     public String toString() {
         return "CEconTradeOffer{" +
@@ -364,4 +174,5 @@ class CEconTradeOffer {
                 ", from_real_time_trade=" + from_real_time_trade +
                 '}';
     }
+
 }

@@ -15,7 +15,7 @@ public class SteamTradeTest {
         steamTrade.addCookie("steamCountry", "RU%7C90d44fe7e18a9d857b0d0918d25f5734", false);
         steamTrade.login("Freeman081", "!zsifhgv^FGysehgf7v6");
 //        steamTrade.getTradeOffer(1L, "RU");
-        CEconTradeOffer tradeOffer = steamTrade.makeOffer(new SteamID(76561198057626189L));
+        CEconTradeOffer_old tradeOffer = steamTrade.makeOffer(new SteamID(76561198057626189L));
         CEconInventory inv = tradeOffer.getTheirInventory(EAppID.DOTA2, EContextID.BACKPACK);
 //        List<CEconTradeOffer> list = steamTrade.getIncomingTradeOffers();
     }

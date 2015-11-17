@@ -1,5 +1,6 @@
 package com.github.steam.api;
 
+import com.github.steam.api.adapter.TradeOfferStateAdapter;
 import com.github.steam.api.enumeration.ETradeOfferState;
 import com.github.steam.api.enumeration.HttpMethod;
 import com.github.steam.api.exception.*;
@@ -78,15 +79,19 @@ public class TradeUser {
      * @return Список CEconTradeOffer
      * @throws IEconServiceException
      */
-    public List<CEconTradeOffer> getTradeOffers(Map<String, String> params) throws IEconServiceException {
+    public List<TradeOffer> getTradeOffers(Map<String, String> params) throws IEconServiceException, IOException {
         if (!params.containsKey("get_sent_offers") && !params.containsKey("get_received_offers")) {
             params.put("get_received_offers", "true");
             params.put("get_sent_offers", "true");
         }
-        String result = doAPICall("GetTradeOffers/v1", HttpMethod.GET, params);
-        Type listType = new TypeToken<ArrayList<CEconTradeOffer>>() {
-        }.getType();
-        return gson.fromJson(result, listType);
+        String result = this.doAPICall("GetTradeOffers/v1", HttpMethod.GET, params);
+        Type listType = new TypeToken<ArrayList<TradeOffer>>() {}.getType();
+        List<CEconTradeOffer> tradeOffersData = gson.fromJson(result, listType);
+        List<TradeOffer> tradeOffers = new ArrayList<>();
+        for (CEconTradeOffer tradeOfferData : tradeOffersData) {
+            tradeOffers.add(new TradeOffer(this, tradeOfferData));
+        }
+        return tradeOffers;
     }
 
     /**
@@ -96,12 +101,13 @@ public class TradeUser {
      * @param language     Язык
      * @return CEconTradeOffer
      */
-    public CEconTradeOffer getTradeOffer(long tradeOfferID, String language) throws IEconServiceException {
+    public TradeOffer getTradeOffer(long tradeOfferID, String language) throws IEconServiceException, IOException {
         Map<String, String> params = new HashMap<>();
         params.put("tradeofferid", String.valueOf(tradeOfferID));
         params.put("language", language);
         String result = doAPICall("GetTradeOffer/v1", HttpMethod.GET, params);
-        return gson.fromJson(result, CEconTradeOffer.class);
+        CEconTradeOffer tradeOfferData = gson.fromJson(result, CEconTradeOffer.class);
+        return new TradeOffer(this, tradeOfferData);
     }
 
     /**
@@ -123,8 +129,8 @@ public class TradeUser {
      * @return SteamTrade - экземпляр
      * @throws Exception
      */
-    public CEconTradeOffer makeOffer(SteamID partner) throws Exception {
-        return new CEconTradeOffer(this, partner);
+    public TradeOffer makeOffer(SteamID partner) throws Exception {
+        return new TradeOffer(this, partner);
     }
 
     /**
@@ -133,7 +139,7 @@ public class TradeUser {
      * @return Список CEconTradeOffer
      * @throws IOException
      */
-    public List<CEconTradeOffer> getOutcomingTradeOffers() throws IOException, IEconServiceException {
+    public List<TradeOffer> getOutcomingTradeOffers() throws IOException, IEconServiceException {
         Map<String, String> params = new HashMap<>();
         params.put("get_sent_offers", "true");
         return this.getTradeOffers(params);
@@ -145,7 +151,7 @@ public class TradeUser {
      * @return Список CEconTradeOffer
      * @throws IOException
      */
-    public List<CEconTradeOffer> getIncomingTradeOffers() throws IOException, IEconServiceException {
+    public List<TradeOffer> getIncomingTradeOffers() throws IOException, IEconServiceException {
         Map<String, String> params = new HashMap<>();
         params.put("get_received_offers", "true");
         return this.getTradeOffers(params);
