@@ -1,5 +1,6 @@
 package com.github.steam.api;
 
+//TODO Сделать inner-классом
 class CEconTradeStatus {
 
     private boolean newversion;

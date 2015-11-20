@@ -60,6 +60,15 @@ class CEconAsset {
         return missing;
     }
 
+    /**
+     * Получить цену предмета в steam
+     *
+     * @return Цена
+     */
+    public float getAssetPrice() {
+        return 0;
+    }
+
     @Override
     public String toString() {
         return "CEconAsset{" +

@@ -1,6 +1,7 @@
 package com.github.steam.api.adapter;
 
 import com.github.steam.api.CEconTradeOffer;
+import com.github.steam.api.enumeration.ETradeOfferState;
 import com.google.gson.*;
 
 import java.lang.reflect.Type;
@@ -110,10 +111,22 @@ public class GetOfferAdapter implements JsonDeserializer<CEconTradeOffer> {
 
     @Override
     public CEconTradeOffer deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
-        JsonObject jsonObject = jsonElement.getAsJsonObject();
-        JsonObject jsonObject1 = jsonObject.getAsJsonObject("response");
-        JsonObject jsonObject2 = jsonObject1.getAsJsonObject("offer");
-        return null;
+        JsonObject responseNode = jsonElement.getAsJsonObject().getAsJsonObject("response");
+        JsonObject offerNode = responseNode.getAsJsonObject("offer");
+        if (offerNode == null) {
+            throw new JsonParseException("There is no [offer] element");
+        }
+        CEconTradeOffer econTradeOffer = new CEconTradeOffer();
+        econTradeOffer.setTradeOfferID(offerNode.getAsJsonObject("tradeofferid").getAsLong());
+        econTradeOffer.setAccountIdOther(offerNode.getAsJsonObject("accountid_other").getAsLong());
+        econTradeOffer.setExpirationTime(offerNode.getAsJsonObject("expiration_time").getAsLong());
+        econTradeOffer.setFromRealTimeTrade(offerNode.getAsJsonObject("from_real_time_trade").getAsBoolean());
+        econTradeOffer.setIsOurOffer(offerNode.getAsJsonObject("is_our_offer").getAsBoolean());
+        econTradeOffer.setMessage(offerNode.getAsJsonObject("message").getAsString());
+        econTradeOffer.setTimeCreated(offerNode.getAsJsonObject("time_created").getAsLong());
+        econTradeOffer.setTimeUpdated(offerNode.getAsJsonObject("time_updated").getAsLong());
+        econTradeOffer.setTradeOfferState(ETradeOfferState.valueOf(offerNode.getAsJsonObject("trade_offer_state").getAsInt()));
+        return econTradeOffer;
     }
 
 }

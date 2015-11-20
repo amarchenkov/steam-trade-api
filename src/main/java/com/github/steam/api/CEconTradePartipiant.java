@@ -2,6 +2,7 @@ package com.github.steam.api;
 
 import java.util.List;
 
+//TODO Сделать inner-классом
 class CEconTradePartipiant {
 
     private boolean ready;

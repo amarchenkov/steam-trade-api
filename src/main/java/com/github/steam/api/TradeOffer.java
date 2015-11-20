@@ -12,8 +12,8 @@ import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.message.BasicNameValuePair;
 
-import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -44,10 +44,10 @@ public class TradeOffer {
      * @throws IEconServiceException
      */
     protected TradeOffer(TradeUser tradeUser, SteamID partnerID) throws IEconServiceException {
-        this(tradeUser, partnerID, null, "https://steamcommunity.com/tradeoffer/new/?partner=" + partnerID.getAccountId());
+        this(tradeUser, null, "https://steamcommunity.com/tradeoffer/new/?partner=" + partnerID.getAccountId());
 
         this.tradeOfferData = new CEconTradeOffer();
-        this.tradeOfferData.setAccountIDOther(partnerID.getCommunityId());
+        this.tradeOfferData.setAccountIdOther(partnerID.getCommunityId());
         this.tradeOfferData.setIsOurOffer(true);
         this.tradeOfferData.setTimeCreated(System.currentTimeMillis());
         this.tradeOfferData.setTimeUpdated(System.currentTimeMillis());
@@ -63,29 +63,24 @@ public class TradeOffer {
      * @throws IEconServiceException
      */
     protected TradeOffer(TradeUser tradeUser, CEconTradeOffer tradeOfferData) throws IEconServiceException {
-        this(tradeUser, new SteamID(tradeOfferData.getAccountIDOther()), tradeOfferData, "https://steamcommunity.com/tradeoffer/" + tradeOfferData.getTradeOfferID() + "/");
+        this(tradeUser, tradeOfferData, "https://steamcommunity.com/tradeoffer/" + tradeOfferData.getTradeOfferID() + "/");
     }
 
-    private TradeOffer(TradeUser tradeUser, SteamID partnerID, CEconTradeOffer tradeOfferData, String url) throws IEconServiceException {
+    private TradeOffer(TradeUser tradeUser, CEconTradeOffer tradeOfferData, String url) throws IEconServiceException {
         this.tradeOfferData = tradeOfferData;
         this.tradeUser = tradeUser;
 
-        try {
-            String html = tradeUser.doCommunityCall(url, HttpMethod.GET, null, false);
-            Gson gson = new Gson();
-            Pattern pattern = Pattern.compile("^\\s*var\\s+(g_.+?)\\s+=\\s+(.+?);\\r?$", Pattern.MULTILINE);
-            Matcher matcher = pattern.matcher(html);
-            Map<String, String> javascriptGlobals = new HashMap<>();
-            while (matcher.find()) {
-                javascriptGlobals.put(matcher.group(1), matcher.group(2));
-            }
-            this.sessionId = gson.fromJson(javascriptGlobals.get("g_sessionID"), String.class);
-            this.meInventoryLoadUrl = gson.fromJson(javascriptGlobals.get("g_strInventoryLoadURL"), String.class);
-            this.themInventoryLoadUrl = gson.fromJson(javascriptGlobals.get("g_strTradePartnerInventoryLoadURL"), String.class);
-        } catch (IOException e) {
-            LOG.error("Unable to get data about trade offer", e);
-            throw new IEconServiceException("Unable to get data about trade offer");
+        String html = tradeUser.doCommunityCall(url, HttpMethod.GET, null, false);
+        Gson gson = new Gson();
+        Pattern pattern = Pattern.compile("^\\s*var\\s+(g_.+?)\\s+=\\s+(.+?);\\r?$", Pattern.MULTILINE);
+        Matcher matcher = pattern.matcher(html);
+        Map<String, String> javascriptGlobals = new HashMap<>();
+        while (matcher.find()) {
+            javascriptGlobals.put(matcher.group(1), matcher.group(2));
         }
+        this.sessionId = gson.fromJson(javascriptGlobals.get("g_sessionID"), String.class);
+        this.meInventoryLoadUrl = gson.fromJson(javascriptGlobals.get("g_strInventoryLoadURL"), String.class);
+        this.themInventoryLoadUrl = gson.fromJson(javascriptGlobals.get("g_strTradePartnerInventoryLoadURL"), String.class);
     }
 
     /**
@@ -94,9 +89,9 @@ public class TradeOffer {
      * @param appID     Идентификатор приложения
      * @param contextID Тип предмета
      * @return Инвентарь
-     * @throws Exception
+     * @throws IEconServiceException
      */
-    public CEconInventory getMyInventory(EAppID appID, EContextID contextID) throws Exception {
+    public CEconInventory getMyInventory(EAppID appID, EContextID contextID) throws IEconServiceException {
         return new Gson()
                 .fromJson(tradeUser.doCommunityCall(this.meInventoryLoadUrl + appID + "/" + contextID + "/?trading=1",
                         HttpMethod.GET, null, true), CEconInventory.class);
@@ -108,25 +103,29 @@ public class TradeOffer {
      * @param appID     Идентификатор приложения
      * @param contextID Тип предмета
      * @return Инвентарь
-     * @throws Exception
+     * @throws IEconServiceException
      */
-    public CEconInventory getTheirInventory(EAppID appID, EContextID contextID) throws Exception {
-        URI uri = new URIBuilder(this.themInventoryLoadUrl)
-                .setParameter("sessionid", sessionId)
-                .setParameter("partner", String.valueOf(this.tradeOfferData.getAccountIDOther()))
-                .setParameter("appid", Long.toString(appID.getAppID()))
-                .setParameter("contextid", Long.toString(contextID.getContextID()))
-                .build();
+    public CEconInventory getTheirInventory(EAppID appID, EContextID contextID) throws IEconServiceException {
+        try {
+            URI uri = new URIBuilder(this.themInventoryLoadUrl)
+                    .setParameter("sessionid", sessionId)
+                    .setParameter("partner", String.valueOf(this.tradeOfferData.getAccountIdOther()))
+                    .setParameter("appid", Long.toString(appID.getAppID()))
+                    .setParameter("contextid", Long.toString(contextID.getContextID()))
+                    .build();
 
-        return new Gson().fromJson(tradeUser.doCommunityCall(uri.toString(), HttpMethod.GET, null, true), CEconInventory.class);
+            return new Gson().fromJson(tradeUser.doCommunityCall(uri.toString(), HttpMethod.GET, null, true), CEconInventory.class);
+        } catch (URISyntaxException e) {
+            throw new IEconServiceException("Wrong URL for getting inventory", e);
+        }
     }
 
     /**
      * Отправить новое предложение обмена или контрпредложение
      *
-     * @throws Exception
+     * @throws IEconServiceException
      */
-    public void send() throws Exception {
+    public void send() throws IEconServiceException {
         CEconTradePartipiant me = new CEconTradePartipiant();
         me.setReady(true);
         me.setAssets(this.tradeOfferData.getItemsToGive());
@@ -144,7 +143,7 @@ public class TradeOffer {
         Gson gson = new Gson();
         List<NameValuePair> data = new ArrayList<>();
         data.add(new BasicNameValuePair("sessionid", sessionId));
-        data.add(new BasicNameValuePair("partner", Long.toString(this.tradeOfferData.getAccountIDOther())));
+        data.add(new BasicNameValuePair("partner", Long.toString(this.tradeOfferData.getAccountIdOther())));
         data.add(new BasicNameValuePair("tradeoffermessage", this.tradeOfferData.getMessage()));
         data.add(new BasicNameValuePair("json_tradeoffer", gson.toJson(tradeStatus)));
         if (this.tradeOfferData.getTradeOfferID() != 0) {
@@ -158,9 +157,9 @@ public class TradeOffer {
      * Принять предложение обмена
      * После вызова дальнейшее использование объекта невозможно
      *
-     * @throws Exception
+     * @throws IEconServiceException
      */
-    public void accept() throws Exception {
+    public void accept() throws IEconServiceException {
         List<NameValuePair> data = new ArrayList<>();
         data.add(new BasicNameValuePair("sessionid", this.sessionId));
         data.add(new BasicNameValuePair("tradeofferid", String.valueOf(this.tradeOfferData.getTradeOfferID())));

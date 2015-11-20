@@ -39,6 +39,7 @@ import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.PublicKey;
 import java.security.spec.RSAPublicKeySpec;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -50,14 +51,14 @@ import java.util.stream.Collectors;
  *
  * @author Andrey Marchenkov
  */
+//TODO Десериализаторы для API
 public class TradeUser {
 
     private static final Logger LOG = LogManager.getLogger(TradeUser.class);
-
-    protected static final String apiUrl = "https://api.steampowered.com/IEconService/";
-//    protected static final String apiUrl = "http://localhost/";
+    private static final String API_URL = "https://api.steampowered.com/IEconService/";
 
     private static CookieStore cookieStore = new BasicCookieStore();
+
     private CloseableHttpClient httpClient;
     private Gson gson;
     private String webApiKey;
@@ -72,12 +73,12 @@ public class TradeUser {
         this.httpClient = HttpClients.custom().setDefaultCookieStore(cookieStore).build();
     }
 
-    public TradeUser(String webApiKey, String username, String password) throws GeneralSecurityException, GettingRsaException, IOException, LoginFailedException, GuardRequiredException, CaptchaRequiredException {
+    public TradeUser(String webApiKey, String username, String password) throws IEconServiceException {
         this(webApiKey);
         this.login(username, password);
     }
 
-    public TradeUser(String webApiKey, String username, String password, String steamGuardText, String capText) throws GeneralSecurityException, GettingRsaException, IOException, LoginFailedException, GuardRequiredException, CaptchaRequiredException {
+    public TradeUser(String webApiKey, String username, String password, String steamGuardText, String capText) throws IEconServiceException {
         this(webApiKey);
         this.login(username, password, steamGuardText, capText);
     }
@@ -89,13 +90,13 @@ public class TradeUser {
      * @return Список CEconTradeOffer
      * @throws IEconServiceException
      */
-    public List<TradeOffer> getTradeOffers(Map<String, String> params) throws IEconServiceException, IOException {
+    public List<TradeOffer> getTradeOffers(Map<String, String> params) throws IEconServiceException {
         if (!params.containsKey("get_sent_offers") && !params.containsKey("get_received_offers")) {
             params.put("get_received_offers", "true");
             params.put("get_sent_offers", "true");
         }
         String result = this.doAPICall("GetTradeOffers/v1", HttpMethod.GET, params);
-        Type listType = new TypeToken<ArrayList<TradeOffer>>() {
+        Type listType = new TypeToken<List<CEconTradeOffer>>() {
         }.getType();
         List<CEconTradeOffer> tradeOffersData = gson.fromJson(result, listType);
         List<TradeOffer> tradeOffers = new ArrayList<>();
@@ -112,7 +113,7 @@ public class TradeUser {
      * @param language     Язык
      * @return CEconTradeOffer
      */
-    public TradeOffer getTradeOffer(long tradeOfferID, String language) throws IEconServiceException, IOException {
+    public TradeOffer getTradeOffer(long tradeOfferID, String language) throws IEconServiceException {
         Map<String, String> params = new HashMap<>();
         params.put("tradeofferid", String.valueOf(tradeOfferID));
         params.put("language", language);
@@ -140,6 +141,7 @@ public class TradeUser {
      * @return SteamTrade - экземпляр
      * @throws Exception
      */
+    //TODO Как-то нужно получить tradeofferid для нового предложения обмена
     public TradeOffer makeOffer(SteamID partner) throws Exception {
         return new TradeOffer(this, partner);
     }
@@ -148,9 +150,9 @@ public class TradeUser {
      * Получить список входящих предложений обмена
      *
      * @return Список CEconTradeOffer
-     * @throws IOException
+     * @throws IEconServiceException
      */
-    public List<TradeOffer> getOutcomingTradeOffers() throws IOException, IEconServiceException {
+    public List<TradeOffer> getOutcomingTradeOffers() throws IEconServiceException {
         Map<String, String> params = new HashMap<>();
         params.put("get_sent_offers", "true");
         return this.getTradeOffers(params);
@@ -160,15 +162,14 @@ public class TradeUser {
      * Получить список исходящих предложений обмена
      *
      * @return Список CEconTradeOffer
-     * @throws IOException
      */
-    public List<TradeOffer> getIncomingTradeOffers() throws IOException, IEconServiceException {
+    public List<TradeOffer> getIncomingTradeOffers() throws IEconServiceException {
         Map<String, String> params = new HashMap<>();
         params.put("get_received_offers", "true");
         return this.getTradeOffers(params);
     }
 
-    private void login(String username, String password) throws GeneralSecurityException, IOException, GettingRsaException, CaptchaRequiredException, GuardRequiredException, LoginFailedException {
+    private void login(String username, String password) throws IEconServiceException {
         this.login(username, password, null, null);
     }
 
@@ -178,41 +179,44 @@ public class TradeUser {
      * @param username Имя пользователя
      * @param password Пароль пользователя
      */
-    private void login(String username, String password, String steamGuardText, String capText)
-            throws GeneralSecurityException, IOException, GettingRsaException, CaptchaRequiredException, GuardRequiredException, LoginFailedException {
-        CEconRsaKeyResponse rsaKeyResponse = this.getRSAKey(username);
-        String encryptedBase64Password = this.getEncryptedPassword(password, rsaKeyResponse);
+    private void login(String username, String password, String steamGuardText, String capText) throws IEconServiceException {
+        try {
+            CEconRsaKeyResponse rsaKeyResponse = this.getRSAKey(username);
+            String encryptedBase64Password = this.getEncryptedPassword(password, rsaKeyResponse);
 
-        List<NameValuePair> data = new ArrayList<>();
-        data.add(new BasicNameValuePair("password", encryptedBase64Password));
-        data.add(new BasicNameValuePair("username", username));
-        data.add(new BasicNameValuePair("captchagid", loginJson == null ? "-1" : loginJson.getCaptchaGid()));
-        data.add(new BasicNameValuePair("captcha_text", capText));
-        data.add(new BasicNameValuePair("emailauth", steamGuardText));
-        data.add(new BasicNameValuePair("emailsteamid", loginJson == null ? "" : loginJson.getEmailSteamID()));
+            List<NameValuePair> data = new ArrayList<>();
+            data.add(new BasicNameValuePair("password", encryptedBase64Password));
+            data.add(new BasicNameValuePair("username", username));
+            data.add(new BasicNameValuePair("captchagid", loginJson == null ? "-1" : loginJson.getCaptchaGid()));
+            data.add(new BasicNameValuePair("captcha_text", capText));
+            data.add(new BasicNameValuePair("emailauth", steamGuardText));
+            data.add(new BasicNameValuePair("emailsteamid", loginJson == null ? "" : loginJson.getEmailSteamID()));
 
-        data.add(new BasicNameValuePair("rsatimestamp", rsaKeyResponse.getTimestamp()));
-        String webResponse = this.doCommunityCall("https://steamcommunity.com/login/dologin/", HttpMethod.POST, data, false);
-        this.loginJson = gson.fromJson(webResponse, CEconLoginResponse.class);
+            data.add(new BasicNameValuePair("rsatimestamp", rsaKeyResponse.getTimestamp()));
+            String webResponse = this.doCommunityCall("https://steamcommunity.com/login/dologin/", HttpMethod.POST, data, false);
+            this.loginJson = gson.fromJson(webResponse, CEconLoginResponse.class);
 
-        if (loginJson.isCaptchaNeeded()) {
-            LOG.info("SteamWeb: Captcha is needed. https://steamcommunity.com/public/captcha.php?gid=" + loginJson.getCaptchaGid());
-            throw new CaptchaRequiredException();
-        }
-
-        if (loginJson.isEmailAuthNeeded()) {
-            LOG.info("SteamWeb: SteamGuard is needed.");
-            throw new GuardRequiredException();
-        }
-
-        if (loginJson.isSuccess()) {
-            data = new ArrayList<>();
-            for (Map.Entry<String, String> stringStringEntry : loginJson.getTransferParameters().entrySet()) {
-                data.add(new BasicNameValuePair(stringStringEntry.getKey(), stringStringEntry.getValue()));
+            if (loginJson.isCaptchaNeeded()) {
+                LOG.info("SteamWeb: Captcha is needed. https://steamcommunity.com/public/captcha.php?gid=" + loginJson.getCaptchaGid());
+                throw new CaptchaNeededException("Captcha needed!");
             }
-            this.doCommunityCall(loginJson.getTransferUrl(), HttpMethod.POST, data, false);
-        } else {
-            throw new LoginFailedException();
+
+            if (loginJson.isEmailAuthNeeded()) {
+                LOG.info("SteamWeb: SteamGuard is needed.");
+                throw new SteamGuardNeededException("SteamGuard is needed!");
+            }
+
+            if (loginJson.isSuccess()) {
+                data = new ArrayList<>();
+                for (Map.Entry<String, String> stringStringEntry : loginJson.getTransferParameters().entrySet()) {
+                    data.add(new BasicNameValuePair(stringStringEntry.getKey(), stringStringEntry.getValue()));
+                }
+                this.doCommunityCall(loginJson.getTransferUrl(), HttpMethod.POST, data, false);
+            } else {
+                throw new IEconServiceException("Login failed!");
+            }
+        } catch (GeneralSecurityException | UnsupportedEncodingException e) {
+            throw new IEconServiceException("Encryption password exception", e);
         }
     }
 
@@ -242,17 +246,15 @@ public class TradeUser {
      *
      * @param username Имя пользователя
      * @return Структура CEconRsaKeyResponse
-     * @throws IOException
-     * @throws GettingRsaException
+     * @throws IEconServiceException
      */
-    private CEconRsaKeyResponse getRSAKey(String username) throws IOException, GettingRsaException {
+    private CEconRsaKeyResponse getRSAKey(String username) throws IEconServiceException {
         List<NameValuePair> data = new ArrayList<>();
         data.add(new BasicNameValuePair("username", username));
         String response = this.doCommunityCall("https://steamcommunity.com/login/getrsakey", HttpMethod.POST, data, false);
         CEconRsaKeyResponse rsaKeyResponse = gson.fromJson(response, CEconRsaKeyResponse.class);
-
         if (!rsaKeyResponse.isSuccess()) {
-            throw new GettingRsaException();
+            throw new IEconServiceException("Unsuccess response to [/login/getrsakey]");
         }
         return rsaKeyResponse;
     }
@@ -266,7 +268,7 @@ public class TradeUser {
      */
     protected String doAPICall(String method, HttpMethod httpMethod, Map<String, String> params) throws IEconServiceException {
         try {
-            URIBuilder builder = new URIBuilder(apiUrl + method);
+            URIBuilder builder = new URIBuilder(API_URL + method);
             builder.setParameter("key", this.webApiKey);
             builder.setParameter("format", "json");
             switch (httpMethod) {
@@ -279,12 +281,12 @@ public class TradeUser {
                     List<NameValuePair> data = params.entrySet().stream().map(param -> new BasicNameValuePair(param.getKey(), param.getValue())).collect(Collectors.toList());
                     return IOUtils.toString(request(builder.build().toString(), HttpMethod.POST, data, null).getEntity().getContent());
                 default:
-                    throw new IllegalStateException("Undefined http method");
+                    throw new IllegalArgumentException("Undefined http method");
             }
         } catch (URISyntaxException e) {
             throw new IEconServiceException("Invalid API URI", e);
         } catch (IOException e) {
-            throw new IEconServiceException("HTTP Requset exception", e);
+            throw new IEconServiceException(MessageFormat.format("IOException while doing http request to [{0}]", API_URL), e);
         }
     }
 
@@ -296,22 +298,26 @@ public class TradeUser {
      * @param data       Данные для тела запроса
      * @param isAjax     Флаг ajax-запроса
      * @return HTTP-ответ в строковом виде
-     * @throws IOException
+     * @throws IEconServiceException
      */
-    protected String doCommunityCall(String url, HttpMethod httpMethod, List<NameValuePair> data, boolean isAjax) throws IOException {
-        Map<String, String> headers = new HashMap<>();
-        headers.put("Accept", "text/javascript, text/html, application/xml, text/xml, */*");
-        headers.put("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
-        headers.put("Host", "steamcommunity.com");
-        headers.put("Referer", "http://steamcommunity.com/tradeoffer/1");
+    protected String doCommunityCall(String url, HttpMethod httpMethod, List<NameValuePair> data, boolean isAjax) throws IEconServiceException {
+        try {
+            Map<String, String> headers = new HashMap<>();
+            headers.put("Accept", "text/javascript, text/html, application/xml, text/xml, */*");
+            headers.put("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
+            headers.put("Host", "steamcommunity.com");
+            headers.put("Referer", "http://steamcommunity.com/tradeoffer/1");
 
-        if (isAjax) {
-            headers.put("X-Requested-With", "XMLHttpRequest");
-            headers.put("X-Prototype-Version", "1.7");
+            if (isAjax) {
+                headers.put("X-Requested-With", "XMLHttpRequest");
+                headers.put("X-Prototype-Version", "1.7");
+            }
+
+            HttpResponse response = this.request(url, httpMethod, data, headers);
+            return IOUtils.toString(response.getEntity().getContent());
+        } catch (IOException e) {
+            throw new IEconServiceException("IOException while doing http request to [steamcommunity.com]", e);
         }
-
-        HttpResponse response = request(url, httpMethod, data, headers);
-        return IOUtils.toString(response.getEntity().getContent());
     }
 
     /**
@@ -365,6 +371,81 @@ public class TradeUser {
             ((HttpPost) request).setEntity(new UrlEncodedFormEntity(data, Consts.UTF_8));
         }
         return httpClient.execute((HttpUriRequest) request);
+    }
+
+
+    /**
+     * Объект, который приходит в ответ на /login/getrsakey
+     *
+     * @author Andrey Marchenkov
+     */
+    private class CEconRsaKeyResponse {
+
+        private boolean success;
+        private String publickey_mod;
+        private String publickey_exp;
+        private String timestamp;
+
+        public boolean isSuccess() {
+            return success;
+        }
+
+        public String getPublickeyMod() {
+            return publickey_mod;
+        }
+
+        public String getPublickeyExp() {
+            return publickey_exp;
+        }
+
+        public String getTimestamp() {
+            return timestamp;
+        }
+    }
+
+    /**
+     * Объект, который приходит в ответ на /login/dologin
+     *
+     * @author Andrey Marchenkov
+     */
+    private class CEconLoginResponse {
+
+        private boolean success;
+        private String message;
+        private boolean captcha_needed;
+        private String captcha_gid;
+        private boolean emailauth_needed;
+        private String emailsteamid;
+        private HashMap<String, String> transfer_parameters;
+        private String transfer_url;
+
+        public boolean isSuccess() {
+            return success;
+        }
+
+        public boolean isCaptchaNeeded() {
+            return captcha_needed;
+        }
+
+        public String getCaptchaGid() {
+            return captcha_gid;
+        }
+
+        public boolean isEmailAuthNeeded() {
+            return emailauth_needed;
+        }
+
+        public String getEmailSteamID() {
+            return emailsteamid;
+        }
+
+        public HashMap<String, String> getTransferParameters() {
+            return transfer_parameters;
+        }
+
+        public String getTransferUrl() {
+            return transfer_url;
+        }
     }
 
 }

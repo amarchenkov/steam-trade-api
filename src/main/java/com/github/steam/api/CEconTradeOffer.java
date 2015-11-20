@@ -78,11 +78,11 @@ public class CEconTradeOffer {
         this.tradeofferid = tradeofferid;
     }
 
-    public long getAccountIDOther() {
+    public long getAccountIdOther() {
         return accountid_other;
     }
 
-    public void setAccountIDOther(long accountid_other) {
+    public void setAccountIdOther(long accountid_other) {
         this.accountid_other = accountid_other;
     }
 
@@ -156,6 +156,14 @@ public class CEconTradeOffer {
 
     public void setFromRealTimeTrade(boolean from_real_time_trade) {
         this.from_real_time_trade = from_real_time_trade;
+    }
+
+    public void setItemsToGive(List<CEconAsset> items_to_give) {
+        this.items_to_give = items_to_give;
+    }
+
+    public void setItemsToReceive(List<CEconAsset> items_to_receive) {
+        this.items_to_receive = items_to_receive;
     }
 
     @Override
