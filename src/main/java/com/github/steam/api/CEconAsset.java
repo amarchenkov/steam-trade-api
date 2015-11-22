@@ -5,7 +5,7 @@ package com.github.steam.api;
  *
  * @author Andrey Marchenkov
  */
-class CEconAsset {
+public class CEconAsset {
 
     private long appid;
     private long contextid;

@@ -1,10 +1,13 @@
 package com.github.steam.api.adapter;
 
+import com.github.steam.api.CEconAsset;
 import com.github.steam.api.CEconTradeOffer;
 import com.github.steam.api.enumeration.ETradeOfferState;
 import com.google.gson.*;
+import com.google.gson.reflect.TypeToken;
 
 import java.lang.reflect.Type;
+import java.util.List;
 
 
 /**
@@ -114,7 +117,7 @@ public class GetOfferAdapter implements JsonDeserializer<CEconTradeOffer> {
         JsonObject responseNode = jsonElement.getAsJsonObject().getAsJsonObject("response");
         JsonObject offerNode = responseNode.getAsJsonObject("offer");
         if (offerNode == null) {
-            throw new JsonParseException("There is no [offer] element");
+            return null;
         }
         CEconTradeOffer econTradeOffer = new CEconTradeOffer();
         econTradeOffer.setTradeOfferID(offerNode.getAsJsonObject("tradeofferid").getAsLong());
@@ -126,6 +129,10 @@ public class GetOfferAdapter implements JsonDeserializer<CEconTradeOffer> {
         econTradeOffer.setTimeCreated(offerNode.getAsJsonObject("time_created").getAsLong());
         econTradeOffer.setTimeUpdated(offerNode.getAsJsonObject("time_updated").getAsLong());
         econTradeOffer.setTradeOfferState(ETradeOfferState.valueOf(offerNode.getAsJsonObject("trade_offer_state").getAsInt()));
+        Type listType = new TypeToken<List<CEconAsset>>() {
+        }.getType();
+        econTradeOffer.setItemsToReceive(jsonDeserializationContext.deserialize(offerNode.getAsJsonArray("items_to_receive"), listType));
+        econTradeOffer.setItemsToGive(jsonDeserializationContext.deserialize(offerNode.getAsJsonArray("items_to_give"), listType));
         return econTradeOffer;
     }
 

@@ -51,7 +51,6 @@ import java.util.stream.Collectors;
  *
  * @author Andrey Marchenkov
  */
-//TODO Десериализаторы для API
 public class TradeUser {
 
     private static final Logger LOG = LogManager.getLogger(TradeUser.class);
@@ -60,16 +59,11 @@ public class TradeUser {
     private static CookieStore cookieStore = new BasicCookieStore();
 
     private CloseableHttpClient httpClient;
-    private Gson gson;
     private String webApiKey;
     private CEconLoginResponse loginJson;
 
     private TradeUser(String webApiKey) {
         this.webApiKey = webApiKey;
-        this.gson = new GsonBuilder()
-                .registerTypeAdapter(ETradeOfferState.class, new TradeOfferStateAdapter())
-                .registerTypeAdapter(CEconTradeOffer.class, new GetOfferAdapter())
-                .create();
         this.httpClient = HttpClients.custom().setDefaultCookieStore(cookieStore).build();
     }
 
@@ -98,6 +92,8 @@ public class TradeUser {
         String result = this.doAPICall("GetTradeOffers/v1", HttpMethod.GET, params);
         Type listType = new TypeToken<List<CEconTradeOffer>>() {
         }.getType();
+        Gson gson = new GsonBuilder().registerTypeAdapter(listType, new GetOfferAdapter())
+                .registerTypeAdapter(ETradeOfferState.class, new TradeOfferStateAdapter()).create();
         List<CEconTradeOffer> tradeOffersData = gson.fromJson(result, listType);
         List<TradeOffer> tradeOffers = new ArrayList<>();
         for (CEconTradeOffer tradeOfferData : tradeOffersData) {
@@ -118,6 +114,7 @@ public class TradeUser {
         params.put("tradeofferid", String.valueOf(tradeOfferID));
         params.put("language", language);
         String result = this.doAPICall("GetTradeOffer/v1", HttpMethod.GET, params);
+        Gson gson = new GsonBuilder().registerTypeAdapter(CEconTradeOffer.class, new GetOfferAdapter()).create();
         CEconTradeOffer tradeOfferData = gson.fromJson(result, CEconTradeOffer.class);
         return new TradeOffer(this, tradeOfferData);
     }
@@ -183,6 +180,7 @@ public class TradeUser {
         try {
             CEconRsaKeyResponse rsaKeyResponse = this.getRSAKey(username);
             String encryptedBase64Password = this.getEncryptedPassword(password, rsaKeyResponse);
+            Gson gson = new Gson();
 
             List<NameValuePair> data = new ArrayList<>();
             data.add(new BasicNameValuePair("password", encryptedBase64Password));
@@ -250,6 +248,7 @@ public class TradeUser {
      */
     private CEconRsaKeyResponse getRSAKey(String username) throws IEconServiceException {
         List<NameValuePair> data = new ArrayList<>();
+        Gson gson = new Gson();
         data.add(new BasicNameValuePair("username", username));
         String response = this.doCommunityCall("https://steamcommunity.com/login/getrsakey", HttpMethod.POST, data, false);
         CEconRsaKeyResponse rsaKeyResponse = gson.fromJson(response, CEconRsaKeyResponse.class);
