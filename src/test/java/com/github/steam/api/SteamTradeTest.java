@@ -4,6 +4,9 @@ import com.github.steam.api.enumeration.EAppID;
 import com.github.steam.api.enumeration.EContextID;
 import org.junit.Test;
 
+import java.util.HashMap;
+import java.util.List;
+
 public class SteamTradeTest {
 
     @Test
@@ -15,11 +18,14 @@ public class SteamTradeTest {
         TradeUser steamTrade = new TradeUser("2EAF26F70A37F67B9914DC4D9420D8F7", "Freeman081", "!zsifhgv^FGysehgf7v6");
 //        steamTrade.getTradeOffer(1L, "RU");
         TradeOffer tradeOffer = steamTrade.makeOffer(new SteamID(76561198057626189L));
+        tradeOffer.send();
 
         CEconInventory inv = tradeOffer.getTheirInventory(EAppID.DOTA2, EContextID.BACKPACK);
 
         steamTrade.cancelTradeOffer(853093299L);
-//        List<CEconTradeOffer> list = steamTrade.getIncomingTradeOffers();
+//        List<TradeOffer> list = steamTrade.getOutcomingTradeOffers();
+        TradeOffer list1 = steamTrade.getTradeOffer(8627849242L, "RU");
+        List<TradeOffer> list2 = steamTrade.getTradeOffers(new HashMap<>());
     }
 
 }

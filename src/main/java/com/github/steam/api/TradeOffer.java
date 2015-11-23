@@ -14,6 +14,7 @@ import org.apache.http.message.BasicNameValuePair;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -35,6 +36,7 @@ public class TradeOffer {
     private String meInventoryLoadUrl;
     private String sessionId;
     private CEconTradeOffer tradeOfferData;
+    private int version;
 
     /**
      * Новое предложение обмена
@@ -47,7 +49,7 @@ public class TradeOffer {
         this(tradeUser, null, "https://steamcommunity.com/tradeoffer/new/?partner=" + partnerID.getAccountId());
 
         this.tradeOfferData = new CEconTradeOffer();
-        this.tradeOfferData.setAccountIdOther(partnerID.getCommunityId());
+        this.tradeOfferData.setAccountIdOther(partnerID.getAccountId());
         this.tradeOfferData.setIsOurOffer(true);
         this.tradeOfferData.setTimeCreated(System.currentTimeMillis());
         this.tradeOfferData.setTimeUpdated(System.currentTimeMillis());
@@ -71,6 +73,8 @@ public class TradeOffer {
         this.tradeUser = tradeUser;
 
         String html = tradeUser.doCommunityCall(url, HttpMethod.GET, null, false);
+
+        //TODO Gson брать
         Gson gson = new Gson();
         Pattern pattern = Pattern.compile("^\\s*var\\s+(g_.+?)\\s+=\\s+(.+?);\\r?$", Pattern.MULTILINE);
         Matcher matcher = pattern.matcher(html);
@@ -78,6 +82,7 @@ public class TradeOffer {
         while (matcher.find()) {
             javascriptGlobals.put(matcher.group(1), matcher.group(2));
         }
+        LOG.info(MessageFormat.format("Globals = [{0}]", javascriptGlobals));
         this.sessionId = gson.fromJson(javascriptGlobals.get("g_sessionID"), String.class);
         this.meInventoryLoadUrl = gson.fromJson(javascriptGlobals.get("g_strInventoryLoadURL"), String.class);
         this.themInventoryLoadUrl = gson.fromJson(javascriptGlobals.get("g_strTradePartnerInventoryLoadURL"), String.class);
@@ -131,12 +136,12 @@ public class TradeOffer {
         me.setAssets(this.tradeOfferData.getItemsToGive());
 
         CEconTradePartipiant partner = new CEconTradePartipiant();
-        partner.setReady(false);
+        partner.setReady(true);
         partner.setAssets(this.tradeOfferData.getItemsToReceive());
 
         CEconTradeStatus tradeStatus = new CEconTradeStatus();
         tradeStatus.setNewVersion(true);
-        tradeStatus.setVersion(this.tradeOfferData.getTradeOfferID());
+        tradeStatus.setVersion(this.version + 1);
         tradeStatus.setMe(me);
         tradeStatus.setThem(partner);
 
@@ -146,10 +151,13 @@ public class TradeOffer {
         data.add(new BasicNameValuePair("partner", Long.toString(this.tradeOfferData.getAccountIdOther())));
         data.add(new BasicNameValuePair("tradeoffermessage", this.tradeOfferData.getMessage()));
         data.add(new BasicNameValuePair("json_tradeoffer", gson.toJson(tradeStatus)));
-        if (this.tradeOfferData.getTradeOfferID() != 0) {
-            data.add(new BasicNameValuePair("tradeofferid_countered", String.valueOf(this.tradeOfferData.getTradeOfferID())));
+        if (tradeStatus.getVersion() != 0) {
+            data.add(new BasicNameValuePair("tradeofferid_countered", String.valueOf(tradeStatus.getVersion())));
         }
-        String result = tradeUser.doCommunityCall("https://steamcommunity.com/tradeoffer/new/send", HttpMethod.POST, data, true);
+        String response = tradeUser.doCommunityCall("https://steamcommunity.com/tradeoffer/new/send", HttpMethod.POST, data, true);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug(MessageFormat.format("[/tradeoffer/new/send] response = [{0}]", response));
+        }
         // TODO: parse/return the result
     }
 
@@ -164,7 +172,10 @@ public class TradeOffer {
         data.add(new BasicNameValuePair("sessionid", this.sessionId));
         data.add(new BasicNameValuePair("tradeofferid", String.valueOf(this.tradeOfferData.getTradeOfferID())));
 
-        String result = tradeUser.doCommunityCall("https://steamcommunity.com/tradeoffer/" + this.tradeOfferData.getTradeOfferID() + "/accept", HttpMethod.POST, data, true);
+        String response = tradeUser.doCommunityCall("https://steamcommunity.com/tradeoffer/" + this.tradeOfferData.getTradeOfferID() + "/accept", HttpMethod.POST, data, true);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug(MessageFormat.format("[/tradeoffer/accept] response = [{0}]", response));
+        }
         // TODO: parse/return the result
     }
 
@@ -203,20 +214,8 @@ public class TradeOffer {
         private CEconTradePartipiant me;
         private CEconTradePartipiant them;
 
-        public boolean isNewVersion() {
-            return newversion;
-        }
-
         public long getVersion() {
             return version;
-        }
-
-        public CEconTradePartipiant getMe() {
-            return me;
-        }
-
-        public CEconTradePartipiant getThem() {
-            return them;
         }
 
         public void setNewVersion(boolean newversion) {
@@ -242,16 +241,8 @@ public class TradeOffer {
         private boolean ready;
         private List<CEconAsset> assets;
 
-        public boolean isReady() {
-            return ready;
-        }
-
         public void setReady(boolean ready) {
             this.ready = ready;
-        }
-
-        public List<CEconAsset> getAssets() {
-            return assets;
         }
 
         public void setAssets(List<CEconAsset> assets) {

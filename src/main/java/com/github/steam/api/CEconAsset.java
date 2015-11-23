@@ -1,5 +1,8 @@
 package com.github.steam.api;
 
+import com.github.steam.api.enumeration.EAppID;
+import com.github.steam.api.enumeration.EContextID;
+
 /**
  * Описание предмета отправленого для обмена (независимо от того, ксто создал предложение)
  *
@@ -7,8 +10,8 @@ package com.github.steam.api;
  */
 public class CEconAsset {
 
-    private long appid;
-    private long contextid;
+    private EAppID appid;
+    private EContextID contextid;
     private long assetid;
     private String currencyid;
 
@@ -28,11 +31,11 @@ public class CEconAsset {
      */
     private boolean missing;
 
-    public long getAppID() {
+    public EAppID getAppID() {
         return appid;
     }
 
-    public long getContextID() {
+    public EContextID getContextID() {
         return contextid;
     }
 

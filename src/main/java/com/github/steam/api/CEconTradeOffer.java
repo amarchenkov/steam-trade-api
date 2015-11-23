@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * Модель предложения обмена
+ *
  * @author Andrey Marchenkov
  */
 public class CEconTradeOffer {
