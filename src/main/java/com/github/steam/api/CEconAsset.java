@@ -24,7 +24,7 @@ public class CEconAsset {
     /**
      * the amount offered in the trade, for stackable items and currency
      */
-    private float amount;
+    private int amount;
 
     /**
      * a boolean that indicates the item is no longer present in the user's inventory
@@ -55,12 +55,44 @@ public class CEconAsset {
         return instanceid;
     }
 
-    public float getAmount() {
+    public int getAmount() {
         return amount;
     }
 
     public boolean isMissing() {
         return missing;
+    }
+
+    public void setAppID(EAppID appid) {
+        this.appid = appid;
+    }
+
+    public void setContextID(EContextID contextid) {
+        this.contextid = contextid;
+    }
+
+    public void setAssetID(long assetid) {
+        this.assetid = assetid;
+    }
+
+    public void setCurrencyID(String currencyid) {
+        this.currencyid = currencyid;
+    }
+
+    public void setClassID(String classid) {
+        this.classid = classid;
+    }
+
+    public void setInstanceID(String instanceid) {
+        this.instanceid = instanceid;
+    }
+
+    public void setAmount(int amount) {
+        this.amount = amount;
+    }
+
+    public void setMissing(boolean missing) {
+        this.missing = missing;
     }
 
     /**

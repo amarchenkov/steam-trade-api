@@ -1,0 +1,13 @@
+{
+  "success": true,
+  "requires_twofactor": false,
+  "login_complete": true,
+  "transfer_url": "",
+  "transfer_parameters": {
+    "steamid": "",
+    "token": "",
+    "auth": "",
+    "remember_login": false,
+    "token_secure": ""
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "success": true,
+  "rgInventory": {
+    "<id>": {
+      "id": "",
+      "classid": "",
+      "instanceid": "",
+      "amount": "1",
+      "pos": 1
+    }
+  },
+  "rgCurrency": [
+  ],
+  "rgDescriptions": {
+    "<classid>_<instanceid>": {
+      "appid": "",
+      "classid": "",
+      "instanceid": "",
+      "icon_url": "",
+      "icon_url_large": "",
+      "icon_drag_url": "",
+      "name": "",
+      "market_hash_name": "",
+      "market_name": "",
+      "name_color": "",
+      "background_color": "",
+      "type": "",
+      "tradable": 1,
+      "marketable": 1,
+      "commodity": 0,
+      "market_tradable_restriction": "",
+      "market_marketable_restriction": "",
+      "descriptions": [
+        {
+          "type": "html",
+          "value": ""
+        }
+      ],
+      "tags": [
+        {
+          "internal_name": "",
+          "name": "",
+          "category": "",
+          "color": "",
+          "category_name": ""
+        }
+      ]
+    },
+    "rgAppInfo": {
+      "appid": 570,
+      "name": "Dota 2",
+      "icon": "",
+      "link": ""
+    },
+    "more": false,
+    "more_start": false
+  }
+}

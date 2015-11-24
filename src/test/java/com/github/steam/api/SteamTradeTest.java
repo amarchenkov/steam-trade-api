@@ -4,7 +4,6 @@ import com.github.steam.api.enumeration.EAppID;
 import com.github.steam.api.enumeration.EContextID;
 import org.junit.Test;
 
-import java.util.HashMap;
 import java.util.List;
 
 public class SteamTradeTest {
@@ -16,16 +15,18 @@ public class SteamTradeTest {
         TradeUser.addCookie("steamLoginSecure", "76561198010004566%7C%7CA531C654837F1905C6586C73765B8477A874552B", false);
         TradeUser.addCookie("steamCountry", "RU%7C90d44fe7e18a9d857b0d0918d25f5734", false);
         TradeUser steamTrade = new TradeUser("2EAF26F70A37F67B9914DC4D9420D8F7", "Freeman081", "!zsifhgv^FGysehgf7v6");
-//        steamTrade.getTradeOffer(1L, "RU");
         TradeOffer tradeOffer = steamTrade.makeOffer(new SteamID(76561198057626189L));
+        List<CEconAsset> myInv = tradeOffer.getMyInventory(EAppID.DOTA2, EContextID.BACKPACK);
+        List<CEconAsset> themInv = tradeOffer.getTheirInventory(EAppID.DOTA2, EContextID.BACKPACK);
+        tradeOffer.addItemsToReceive(themInv.get(0));
         tradeOffer.send();
 
-        CEconInventory inv = tradeOffer.getTheirInventory(EAppID.DOTA2, EContextID.BACKPACK);
+//        CEconInventory inv = tradeOffer.getTheirInventory(EAppID.DOTA2, EContextID.BACKPACK);
 
-        steamTrade.cancelTradeOffer(853093299L);
+//        steamTrade.cancelTradeOffer(853093299L);
 //        List<TradeOffer> list = steamTrade.getOutcomingTradeOffers();
-        TradeOffer list1 = steamTrade.getTradeOffer(8627849242L, "RU");
-        List<TradeOffer> list2 = steamTrade.getTradeOffers(new HashMap<>());
+//        TradeOffer list1 = steamTrade.getTradeOffer(8627849242L, "RU");
+//        List<TradeOffer> list2 = steamTrade.getTradeOffers(new HashMap<>());
     }
 
 }

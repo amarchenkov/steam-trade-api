@@ -60,24 +60,38 @@ import java.util.stream.Collectors;
  *
  * @author Andrey Marchenkov
  */
-//TODO Литералы сделать константами
-//TODO Статус пользователя (авторизован или нет)
-//TODO Проверки на пустоту
 public class TradeUser {
 
     private static final Logger LOG = LogManager.getLogger(TradeUser.class);
     private static final String API_URL = "https://api.steampowered.com/IEconService/";
     private static final String API_RESPONSE_ROOT = "response";
+    private static final String COOKIE_DOMAIN = "steamcommunity.com";
+    private static final String SENT_OFFERS_FLAG = "get_sent_offers";
+    private static final String RECEIVED_OFFERS_FLAG = "get_received_offers";
+    private static final String OFFERS_SENT_NODE = "trade_offers_sent";
+    private static final String OFFERS_RECEIVED_NODE = "trade_offers_received";
+    private static final String TRADEOFFERID_PARAM = "tradeofferid";
+    private static final String LANGUAGE_PARAM = "language";
+    private static final String OFFER_NODE = "offer";
+    private static final String USERNAME_PARAM = "username";
+    private static final String PASSWORD_PARAM = "password";
+    private static final String CAPTCHAGID_PARAM = "captchagid";
+    private static final String CAPTCHA_TEXT_PARAM = "captcha_text";
+    private static final String EMAILAUTH_PARAM = "emailauth";
+    private static final String EMAILSTEAMID_PARAM = "emailsteamid";
+    private static final String RSATIMESTAMP_PARAM = "rsatimestamp";
 
     private static CookieStore cookieStore = new BasicCookieStore();
 
     private CloseableHttpClient httpClient;
     private String webApiKey;
     private CEconLoginResponse loginJson;
+    private boolean isAuthorized;
 
     private TradeUser(String webApiKey) {
         this.webApiKey = webApiKey;
         this.httpClient = HttpClients.custom().setDefaultCookieStore(cookieStore).build();
+        this.isAuthorized = false;
     }
 
     public TradeUser(String webApiKey, String username, String password) throws IEconServiceException {
@@ -98,9 +112,9 @@ public class TradeUser {
      * @throws IEconServiceException
      */
     public List<TradeOffer> getTradeOffers(Map<String, String> params) throws IEconServiceException {
-        if (!params.containsKey("get_sent_offers") && !params.containsKey("get_received_offers")) {
-            params.put("get_received_offers", "1");
-            params.put("get_sent_offers", "1");
+        if (!params.containsKey(SENT_OFFERS_FLAG) && !params.containsKey(RECEIVED_OFFERS_FLAG)) {
+            params.put(RECEIVED_OFFERS_FLAG, "1");
+            params.put(SENT_OFFERS_FLAG, "1");
         }
         String response = this.doAPICall("GetTradeOffers/v1", HttpMethod.GET, params);
 
@@ -111,12 +125,19 @@ public class TradeUser {
         Type listType = new TypeToken<List<CEconTradeOffer>>() {
         }.getType();
         Gson gson = this.getGson();
-        JsonParser parser = new JsonParser();
-        JsonElement rootElement = parser.parse(new StringReader(response));
-        List<CEconTradeOffer> tradeOffersSent = gson.fromJson(rootElement.getAsJsonObject().getAsJsonObject(API_RESPONSE_ROOT).getAsJsonArray("trade_offers_sent"), listType);
-        List<CEconTradeOffer> tradeOffersReceived = gson.fromJson(rootElement.getAsJsonObject().getAsJsonObject(API_RESPONSE_ROOT).getAsJsonArray("trade_offers_received"), listType);
-        List<CEconTradeOffer> tradeOffersData = new ArrayList<>(tradeOffersSent);
-        tradeOffersData.addAll(tradeOffersReceived);
+        JsonElement rootElement = new JsonParser().parse(response);
+        List<CEconTradeOffer> tradeOffersSent = gson.fromJson(rootElement.getAsJsonObject()
+                .getAsJsonObject(API_RESPONSE_ROOT).getAsJsonArray(OFFERS_SENT_NODE), listType);
+        List<CEconTradeOffer> tradeOffersReceived = gson.fromJson(rootElement.getAsJsonObject()
+                .getAsJsonObject(API_RESPONSE_ROOT).getAsJsonArray(OFFERS_RECEIVED_NODE), listType);
+        List<CEconTradeOffer> tradeOffersData = new ArrayList<>();
+
+        if (tradeOffersSent != null) {
+            tradeOffersData.addAll(tradeOffersSent);
+        }
+        if (tradeOffersReceived != null) {
+            tradeOffersData.addAll(tradeOffersReceived);
+        }
 
         List<TradeOffer> tradeOffers = new ArrayList<>();
         for (CEconTradeOffer tradeOfferData : tradeOffersData) {
@@ -134,29 +155,17 @@ public class TradeUser {
      */
     public TradeOffer getTradeOffer(long tradeOfferID, String language) throws IEconServiceException {
         Map<String, String> params = new HashMap<>();
-        params.put("tradeofferid", String.valueOf(tradeOfferID));
-        params.put("language", language);
+        params.put(TRADEOFFERID_PARAM, String.valueOf(tradeOfferID));
+        params.put(LANGUAGE_PARAM, language);
         String response = this.doAPICall("GetTradeOffer/v1", HttpMethod.GET, params);
         if (LOG.isDebugEnabled()) {
             LOG.debug(MessageFormat.format("[GetTradeOffer/v1] response = [{0}]", response));
         }
         Gson gson = this.getGson();
-        JsonParser parser = new JsonParser();
-        JsonElement rootElement = parser.parse(new StringReader(response));
-        CEconTradeOffer tradeOfferData = gson.fromJson(rootElement.getAsJsonObject().getAsJsonObject(API_RESPONSE_ROOT).getAsJsonObject("offer"), CEconTradeOffer.class);
+        JsonElement rootElement = new JsonParser().parse(new StringReader(response));
+        CEconTradeOffer tradeOfferData = gson.fromJson(rootElement.getAsJsonObject().getAsJsonObject(API_RESPONSE_ROOT)
+                .getAsJsonObject(OFFER_NODE), CEconTradeOffer.class);
         return (tradeOfferData != null) ? new TradeOffer(this, tradeOfferData) : null;
-    }
-
-    /**
-     * Отменить исходящее предложение обмена
-     *
-     * @param tradeOfferID Идентификатор предложения обмена
-     * @throws IEconServiceException
-     */
-    public void cancelTradeOffer(long tradeOfferID) throws IEconServiceException {
-        Map<String, String> params = new HashMap<>();
-        params.put("tradeofferid", String.valueOf(tradeOfferID));
-        this.doAPICall("CancelTradeOffer/v1", HttpMethod.POST, params);
     }
 
     /**
@@ -178,7 +187,7 @@ public class TradeUser {
      */
     public List<TradeOffer> getOutcomingTradeOffers() throws IEconServiceException {
         Map<String, String> params = new HashMap<>();
-        params.put("get_sent_offers", "1");
+        params.put(SENT_OFFERS_FLAG, "1");
         return this.getTradeOffers(params);
     }
 
@@ -189,7 +198,7 @@ public class TradeUser {
      */
     public List<TradeOffer> getIncomingTradeOffers() throws IEconServiceException {
         Map<String, String> params = new HashMap<>();
-        params.put("get_received_offers", "1");
+        params.put(RECEIVED_OFFERS_FLAG, "1");
         return this.getTradeOffers(params);
     }
 
@@ -210,14 +219,14 @@ public class TradeUser {
             Gson gson = this.getGson();
 
             List<NameValuePair> data = new ArrayList<>();
-            data.add(new BasicNameValuePair("password", encryptedBase64Password));
-            data.add(new BasicNameValuePair("username", username));
-            data.add(new BasicNameValuePair("captchagid", loginJson == null ? "-1" : loginJson.captchaGID));
-            data.add(new BasicNameValuePair("captcha_text", capText));
-            data.add(new BasicNameValuePair("emailauth", steamGuardText));
-            data.add(new BasicNameValuePair("emailsteamid", loginJson == null ? "" : loginJson.emailSteamID));
+            data.add(new BasicNameValuePair(PASSWORD_PARAM, encryptedBase64Password));
+            data.add(new BasicNameValuePair(USERNAME_PARAM, username));
+            data.add(new BasicNameValuePair(CAPTCHAGID_PARAM, loginJson == null ? "-1" : loginJson.captchaGID));
+            data.add(new BasicNameValuePair(CAPTCHA_TEXT_PARAM, capText));
+            data.add(new BasicNameValuePair(EMAILAUTH_PARAM, steamGuardText));
+            data.add(new BasicNameValuePair(EMAILSTEAMID_PARAM, loginJson == null ? "" : loginJson.emailSteamID));
 
-            data.add(new BasicNameValuePair("rsatimestamp", rsaKeyResponse.timestamp));
+            data.add(new BasicNameValuePair(RSATIMESTAMP_PARAM, rsaKeyResponse.timestamp));
             String response = this.doCommunityCall("https://steamcommunity.com/login/dologin/", HttpMethod.POST, data, false);
             if (LOG.isDebugEnabled()) {
                 LOG.debug(MessageFormat.format("[/login/dologin] response = [{0}]", response));
@@ -240,6 +249,7 @@ public class TradeUser {
                     data.add(new BasicNameValuePair(stringStringEntry.getKey(), stringStringEntry.getValue()));
                 }
                 this.doCommunityCall(loginJson.transferURL, HttpMethod.POST, data, false);
+                this.isAuthorized = true;
             } else {
                 throw new IEconServiceException("Login failed!");
             }
@@ -279,7 +289,7 @@ public class TradeUser {
     private CEconRsaKeyResponse getRSAKey(String username) throws IEconServiceException {
         List<NameValuePair> data = new ArrayList<>();
         Gson gson = this.getGson();
-        data.add(new BasicNameValuePair("username", username));
+        data.add(new BasicNameValuePair(USERNAME_PARAM, username));
         String response = this.doCommunityCall("https://steamcommunity.com/login/getrsakey", HttpMethod.POST, data, false);
         if (LOG.isDebugEnabled()) {
             LOG.debug(MessageFormat.format("[/login/getrsakey] response = [{0}]", response));
@@ -380,7 +390,7 @@ public class TradeUser {
     public static void addCookie(String name, String value, boolean secure) {
         BasicClientCookie cookie = new BasicClientCookie(name, value);
         cookie.setVersion(0);
-        cookie.setDomain("steamcommunity.com");
+        cookie.setDomain(COOKIE_DOMAIN);
         cookie.setPath("/");
         cookie.setSecure(secure);
         TradeUser.addCookie(cookie);
@@ -425,6 +435,15 @@ public class TradeUser {
                 .registerTypeAdapter(EContextID.class, new ContextIdAdapter())
                 .registerTypeAdapter(ETradeOfferState.class, new TradeOfferStateAdapter())
                 .create();
+    }
+
+    /**
+     * Является ли пользователь авторизованным на steamcommunity.com
+     *
+     * @return Флаг авторизации
+     */
+    public boolean isAuthorized() {
+        return this.isAuthorized;
     }
 
 

@@ -16,6 +16,13 @@ public class SteamID {
         return communityId;
     }
 
+    public static long getCommunityIdByAccountId(long accountId) {
+        long universe = 1L;
+        long accountType = 1L;
+        long instance = 1L;
+        return ((universe << 56) | (accountType << 52) | (instance << 32) | accountId);
+    }
+
     public String render() {
         long accountId = getAccountId();
         return "STEAM_0:" + (accountId & 1) + ":" + (accountId >> 1);
