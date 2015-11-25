@@ -28,12 +28,20 @@ public class InventoryAdapter implements JsonDeserializer<List<CEconAsset>>, Jso
     @Override
     public List<CEconAsset> deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
         final List<CEconAsset> result = new ArrayList<>();
+        if (jsonElement.getAsJsonObject().getAsJsonPrimitive("success").getAsString().equals("false")) {
+            return result;
+        }
         JsonObject inventoryNode = new JsonObject();
+        JsonObject descriptionNode =  new JsonObject();
         if (!jsonElement.getAsJsonObject().get("rgInventory").isJsonArray()) {
             inventoryNode = jsonElement.getAsJsonObject().getAsJsonObject("rgInventory");
         }
+        if (!jsonElement.getAsJsonObject().get("rgDescriptions").isJsonArray()) {
+            descriptionNode = jsonElement.getAsJsonObject().getAsJsonObject("rgDescriptions");
+        }
         Type mapType = new TypeToken<Map<String, JsonObject>>(){}.getType();
         Map<String, JsonObject> inventoryMap = jsonDeserializationContext.deserialize(inventoryNode, mapType);
+        Map<String, JsonObject> descriptionMap = jsonDeserializationContext.deserialize(descriptionNode, mapType);
         for (Map.Entry<String, JsonObject> item : inventoryMap.entrySet()) {
             CEconAsset econAsset = new CEconAsset();
             econAsset.setAmount(item.getValue().getAsJsonPrimitive("amount").getAsInt());
@@ -44,6 +52,9 @@ public class InventoryAdapter implements JsonDeserializer<List<CEconAsset>>, Jso
             econAsset.setMissing(false);
             econAsset.setAppID(this.appID);
             econAsset.setContextID(this.contextID);
+            econAsset.setMarketHashName(
+                    descriptionMap.get(econAsset.getClassID() + "_" + econAsset.getInstanceID())
+                            .getAsJsonPrimitive("market_hash_name").getAsString());
             result.add(econAsset);
         }
         return result;

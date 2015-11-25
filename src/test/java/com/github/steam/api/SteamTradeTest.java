@@ -16,7 +16,7 @@ public class SteamTradeTest {
         TradeUser.addCookie("steamCountry", "RU%7C90d44fe7e18a9d857b0d0918d25f5734", false);
         TradeUser steamTrade = new TradeUser("2EAF26F70A37F67B9914DC4D9420D8F7", "Freeman081", "!zsifhgv^FGysehgf7v6");
         TradeOffer tradeOffer = steamTrade.makeOffer(new SteamID(76561198057626189L));
-        List<CEconAsset> myInv = tradeOffer.getMyInventory(EAppID.DOTA2, EContextID.BACKPACK);
+        List<CEconAsset> myInv = tradeOffer.getMyInventory(EAppID.STEAM, EContextID.COMMUNITY);
         List<CEconAsset> themInv = tradeOffer.getTheirInventory(EAppID.DOTA2, EContextID.BACKPACK);
         tradeOffer.addItemsToReceive(themInv.get(0));
         tradeOffer.send();

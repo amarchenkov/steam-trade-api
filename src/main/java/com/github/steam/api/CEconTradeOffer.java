@@ -1,6 +1,7 @@
 package com.github.steam.api;
 
 import com.github.steam.api.enumeration.ETradeOfferState;
+import com.google.gson.annotations.SerializedName;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,77 +16,88 @@ public class CEconTradeOffer {
     /**
      * Уникальный идентификатор предложения обмена
      */
-    private long tradeofferid;
+    @SerializedName("tradeofferid")
+    private long tradeOfferID;
 
     /**
      * Идентификатор партнера по предложению обмена
      */
-    private long accountid_other;
+    @SerializedName("accountid_other")
+    private long accountIdOther;
 
     /**
      * Сообщение создателя предложения обмена
      */
+    @SerializedName("message")
     private String message;
 
     /**
      * Метка времени UNIX истечени срока действия
      */
-    private long expiration_time;
+    @SerializedName("expiration_time")
+    private long expirationTime;
 
     /**
      * Состояние предложения обмена
      *
      * @see ETradeOfferState
      */
-    private ETradeOfferState trade_offer_state;
+    @SerializedName("trade_offer_state")
+    private ETradeOfferState tradeOfferState;
 
     /**
      * Массив объектов класса CEconAsset, предметы отправленные для обмена (независимо от того, кто создал предложение обмена)
      */
-    private List<CEconAsset> items_to_give = new ArrayList<>();
+    @SerializedName("items_to_give")
+    private List<CEconAsset> itemsToGive = new ArrayList<>();
 
     /**
      * Массив объектов класса CEconAsset, предметы полученные для обмена (независимо от того, кто создал предложение обмена)
      */
-    private List<CEconAsset> items_to_receive = new ArrayList<>();
+    @SerializedName("items_to_receive")
+    private List<CEconAsset> itemsToReceive = new ArrayList<>();
 
     /**
      * Флаг, указывающий на принадлежность к текущему пользователю
      */
-    private boolean is_our_offer;
+    @SerializedName("is_our_offer")
+    private boolean isOurOffer;
 
     /**
      * Метка времени UNIX создания предложения обмена
      */
-    private long time_created;
+    @SerializedName("time_created")
+    private long timeCreated;
 
     /**
      * Метка времени UNIX последнего изменения предложения обмена
      */
-    private long time_updated;
+    @SerializedName("time_updated")
+    private long timeUpdated;
 
     /**
      * Флаг указывающий, что предложение создано автоматически в реальном времени
      */
-    private boolean from_real_time_trade;
+    @SerializedName("from_real_time_trade")
+    private boolean fromRealTimeTrade;
 
     public CEconTradeOffer() {
     }
 
     public long getTradeOfferID() {
-        return tradeofferid;
+        return tradeOfferID;
     }
 
     public void setTradeOfferID(long tradeofferid) {
-        this.tradeofferid = tradeofferid;
+        this.tradeOfferID = tradeofferid;
     }
 
     public long getAccountIdOther() {
-        return accountid_other;
+        return accountIdOther;
     }
 
     public void setAccountIdOther(long accountid_other) {
-        this.accountid_other = accountid_other;
+        this.accountIdOther = accountid_other;
     }
 
     public String getMessage() {
@@ -97,91 +109,91 @@ public class CEconTradeOffer {
     }
 
     public long getExpirationTime() {
-        return expiration_time;
+        return expirationTime;
     }
 
     public void setExpirationTime(long expiration_time) {
-        this.expiration_time = expiration_time;
+        this.expirationTime = expiration_time;
     }
 
     public ETradeOfferState getTradeOfferState() {
-        return trade_offer_state;
+        return tradeOfferState;
     }
 
     public void setTradeOfferState(ETradeOfferState trade_offer_state) {
-        this.trade_offer_state = trade_offer_state;
+        this.tradeOfferState = trade_offer_state;
     }
 
     public List<CEconAsset> getItemsToGive() {
-        return items_to_give;
+        return itemsToGive;
     }
 
     public void addItemsToGive(CEconAsset itemToGive) {
-        this.items_to_give.add(itemToGive);
+        this.itemsToGive.add(itemToGive);
     }
 
     public List<CEconAsset> getItemsToReceive() {
-        return items_to_receive;
+        return itemsToReceive;
     }
 
     public void addItemsToReceive(CEconAsset itemToReceive) {
-        this.items_to_receive.add(itemToReceive);
+        this.itemsToReceive.add(itemToReceive);
     }
 
     public boolean isOurOffer() {
-        return is_our_offer;
+        return isOurOffer;
     }
 
     public void setIsOurOffer(boolean is_our_offer) {
-        this.is_our_offer = is_our_offer;
+        this.isOurOffer = is_our_offer;
     }
 
     public long getTimeCreated() {
-        return time_created;
+        return timeCreated;
     }
 
     public void setTimeCreated(long time_created) {
-        this.time_created = time_created;
+        this.timeCreated = time_created;
     }
 
     public long getTimeUpdated() {
-        return time_updated;
+        return timeUpdated;
     }
 
     public void setTimeUpdated(long time_updated) {
-        this.time_updated = time_updated;
+        this.timeUpdated = time_updated;
     }
 
     public boolean isFromRealTimeTrade() {
-        return from_real_time_trade;
+        return fromRealTimeTrade;
     }
 
     public void setFromRealTimeTrade(boolean from_real_time_trade) {
-        this.from_real_time_trade = from_real_time_trade;
+        this.fromRealTimeTrade = from_real_time_trade;
     }
 
     public void setItemsToGive(List<CEconAsset> items_to_give) {
-        this.items_to_give = items_to_give;
+        this.itemsToGive = items_to_give;
     }
 
     public void setItemsToReceive(List<CEconAsset> items_to_receive) {
-        this.items_to_receive = items_to_receive;
+        this.itemsToReceive = items_to_receive;
     }
 
     @Override
     public String toString() {
         return "CEconTradeOffer{" +
-                "tradeofferid='" + tradeofferid + '\'' +
-                ", accountid_other='" + accountid_other + '\'' +
+                "tradeOfferID='" + tradeOfferID + '\'' +
+                ", accountIdOther='" + accountIdOther + '\'' +
                 ", message='" + message + '\'' +
-                ", expiration_time=" + expiration_time +
-                ", trade_offer_state=" + trade_offer_state +
-                ", items_to_give=" + items_to_give +
-                ", items_to_receive=" + items_to_receive +
-                ", is_our_offer=" + is_our_offer +
-                ", time_created=" + time_created +
-                ", time_updated=" + time_updated +
-                ", from_real_time_trade=" + from_real_time_trade +
+                ", expirationTime=" + expirationTime +
+                ", tradeOfferState=" + tradeOfferState +
+                ", itemsToGive=" + itemsToGive +
+                ", itemsToReceive=" + itemsToReceive +
+                ", isOurOffer=" + isOurOffer +
+                ", timeCreated=" + timeCreated +
+                ", timeUpdated=" + timeUpdated +
+                ", fromRealTimeTrade=" + fromRealTimeTrade +
                 '}';
     }
 
