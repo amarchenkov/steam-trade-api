@@ -100,6 +100,7 @@ public class CEconAsset {
      *
      * @return Цена
      */
+    //TODO Реализовать получение цены
     public float getAssetPrice() {
         return 0;
     }

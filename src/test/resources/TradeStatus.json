@@ -1,0 +1,21 @@
+{
+  "newversion": true,
+  "version": 2,
+  "me": {
+    "assets": [],
+    "currency": [],
+    "ready": false
+  },
+  "them": {
+    "assets": [
+      {
+        "appid": 570,
+        "contextid": "2",
+        "amount": 1,
+        "assetid": "2423603122"
+      }
+    ],
+    "currency": [],
+    "ready": false
+  }
+}

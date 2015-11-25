@@ -9,6 +9,7 @@ import com.github.steam.api.exception.IEconServiceException;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonParser;
+import com.google.gson.annotations.SerializedName;
 import com.google.gson.reflect.TypeToken;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -86,7 +87,7 @@ public class TradeOffer {
             while (matcher.find()) {
                 javascriptGlobals.put(matcher.group(1), matcher.group(2));
             }
-            LOG.info(MessageFormat.format("Globals = [{0}]", javascriptGlobals));
+            LOG.debug(MessageFormat.format("Globals = [{0}]", javascriptGlobals));
             Gson gson = new Gson();
             this.sessionId = gson.fromJson(javascriptGlobals.get("g_sessionID"), String.class);
             this.meInventoryLoadUrl = gson.fromJson(javascriptGlobals.get("g_strInventoryLoadURL"), String.class);
@@ -103,7 +104,8 @@ public class TradeOffer {
      * @throws IEconServiceException
      */
     public List<CEconAsset> getMyInventory(EAppID appID, EContextID contextID) throws IEconServiceException {
-        Type type = new TypeToken<List<CEconAsset>>() {} .getType();
+        Type type = new TypeToken<List<CEconAsset>>() {
+        }.getType();
         return new GsonBuilder().registerTypeAdapter(type, new InventoryAdapter(appID, contextID)).create()
                 .fromJson(tradeUser.doCommunityCall(this.meInventoryLoadUrl + appID + "/" + contextID + "/?trading=1",
                         HttpMethod.GET, null, true), type);
@@ -125,7 +127,8 @@ public class TradeOffer {
                     .setParameter("appid", Long.toString(appID.getAppID()))
                     .setParameter("contextid", Long.toString(contextID.getContextID()))
                     .build();
-            Type type = new TypeToken<List<CEconAsset>>() {} .getType();
+            Type type = new TypeToken<List<CEconAsset>>() {
+            }.getType();
             return new GsonBuilder()
                     .registerTypeAdapter(type, new InventoryAdapter(appID, contextID)).create()
                     .fromJson(tradeUser.doCommunityCall(uri.toString(), HttpMethod.GET, null, true), type);
@@ -140,24 +143,26 @@ public class TradeOffer {
      * @throws IEconServiceException
      */
     public void send() throws IEconServiceException {
-        if (!this.tradeOfferData.isOurOffer() ) {
+        this.version++;
+        if (!this.tradeOfferData.isOurOffer()) {
             throw new IEconServiceException("Offer has already sent");
         }
         CEconTradePartipiant me = new CEconTradePartipiant();
-        me.setReady(false);
-        me.setAssets(this.tradeOfferData.getItemsToGive());
+        me.ready = false;
+        me.assets = this.tradeOfferData.getItemsToGive();
 
         CEconTradePartipiant partner = new CEconTradePartipiant();
-        partner.setReady(false);
-        partner.setAssets(this.tradeOfferData.getItemsToReceive());
+        partner.ready = false;
+        partner.assets = this.tradeOfferData.getItemsToReceive();
 
         CEconTradeStatus tradeStatus = new CEconTradeStatus();
-        tradeStatus.setNewVersion(true);
-        tradeStatus.setVersion(this.version + 1);
-        tradeStatus.setMe(me);
-        tradeStatus.setThem(partner);
+        tradeStatus.newVersion = true;
+        tradeStatus.version = this.version;
+        tradeStatus.me = me;
+        tradeStatus.them = partner;
 
-        Gson gson = new GsonBuilder().registerTypeAdapter(new TypeToken<List<CEconAsset>>() {} .getType(), new InventoryAdapter()).create();
+        Gson gson = new GsonBuilder().registerTypeAdapter(new TypeToken<List<CEconAsset>>() {
+        }.getType(), new InventoryAdapter()).create();
         List<NameValuePair> data = new ArrayList<>();
         data.add(new BasicNameValuePair("sessionid", sessionId));
         data.add(new BasicNameValuePair("partner", Long.toString(SteamID.getCommunityIdByAccountId(this.tradeOfferData.getAccountIdOther()))));
@@ -165,13 +170,11 @@ public class TradeOffer {
         data.add(new BasicNameValuePair("serverid", "1"));
         String s = gson.toJson(tradeStatus);
         data.add(new BasicNameValuePair("json_tradeoffer", gson.toJson(tradeStatus)));
-        if (tradeStatus.getVersion() != 0) {
-            data.add(new BasicNameValuePair("tradeofferid_countered", String.valueOf(tradeStatus.getVersion())));
+        if (tradeStatus.version != 1) {
+            data.add(new BasicNameValuePair("tradeofferid_countered", String.valueOf(this.tradeOfferData.getTradeOfferID())));
         }
         String response = tradeUser.doCommunityCall("https://steamcommunity.com/tradeoffer/new/send", HttpMethod.POST, data, true);
-        if (LOG.isDebugEnabled()) {
-            LOG.debug(MessageFormat.format("[/tradeoffer/new/send] response = [{0}]", response));
-        }
+        LOG.debug(MessageFormat.format("[/tradeoffer/new/send] response = [{0}]", response));
         if (response.equals("null")) {
             throw new IEconServiceException("Wrong response. TradeOfferID expected");
         }
@@ -192,10 +195,10 @@ public class TradeOffer {
         data.add(new BasicNameValuePair("sessionid", this.sessionId));
         data.add(new BasicNameValuePair("tradeofferid", String.valueOf(this.tradeOfferData.getTradeOfferID())));
 
-        String response = tradeUser.doCommunityCall("https://steamcommunity.com/tradeoffer/" + this.tradeOfferData.getTradeOfferID() + "/accept", HttpMethod.POST, data, true);
-        if (LOG.isDebugEnabled()) {
-            LOG.debug(MessageFormat.format("[/tradeoffer/accept] response = [{0}]", response));
-        }
+        String response = tradeUser.doCommunityCall(
+                "https://steamcommunity.com/tradeoffer/" + this.tradeOfferData.getTradeOfferID() + "/accept",
+                HttpMethod.POST, data, true);
+        LOG.debug(MessageFormat.format("[/tradeoffer/accept] response = [{0}]", response));
         // TODO: parse/return the result
     }
 
@@ -246,45 +249,27 @@ public class TradeOffer {
 
     private class CEconTradeStatus {
 
-        private boolean newversion;
+        @SerializedName("newversion")
+        private boolean newVersion;
+
+        @SerializedName("version")
         private long version;
+
+        @SerializedName("me")
         private CEconTradePartipiant me;
+
+        @SerializedName("them")
         private CEconTradePartipiant them;
-
-        public long getVersion() {
-            return version;
-        }
-
-        public void setNewVersion(boolean newversion) {
-            this.newversion = newversion;
-        }
-
-        public void setVersion(long version) {
-            this.version = version;
-        }
-
-        public void setMe(CEconTradePartipiant me) {
-            this.me = me;
-        }
-
-        public void setThem(CEconTradePartipiant them) {
-            this.them = them;
-        }
 
     }
 
     private class CEconTradePartipiant {
 
+        @SerializedName("ready")
         private boolean ready;
+
+        @SerializedName("assets")
         private List<CEconAsset> assets;
-
-        public void setReady(boolean ready) {
-            this.ready = ready;
-        }
-
-        public void setAssets(List<CEconAsset> assets) {
-            this.assets = assets;
-        }
 
     }
 }

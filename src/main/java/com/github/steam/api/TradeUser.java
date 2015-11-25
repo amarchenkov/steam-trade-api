@@ -117,10 +117,7 @@ public class TradeUser {
             params.put(SENT_OFFERS_FLAG, "1");
         }
         String response = this.doAPICall("GetTradeOffers/v1", HttpMethod.GET, params);
-
-        if (LOG.isDebugEnabled()) {
-            LOG.debug(MessageFormat.format("[GetTradeOffers/v1] response = [{0}]", response));
-        }
+        LOG.debug(MessageFormat.format("[GetTradeOffers/v1] response = [{0}]", response));
 
         Type listType = new TypeToken<List<CEconTradeOffer>>() {
         }.getType();
@@ -158,9 +155,7 @@ public class TradeUser {
         params.put(TRADEOFFERID_PARAM, String.valueOf(tradeOfferID));
         params.put(LANGUAGE_PARAM, language);
         String response = this.doAPICall("GetTradeOffer/v1", HttpMethod.GET, params);
-        if (LOG.isDebugEnabled()) {
-            LOG.debug(MessageFormat.format("[GetTradeOffer/v1] response = [{0}]", response));
-        }
+        LOG.debug(MessageFormat.format("[GetTradeOffer/v1] response = [{0}]", response));
         Gson gson = this.getGson();
         JsonElement rootElement = new JsonParser().parse(new StringReader(response));
         CEconTradeOffer tradeOfferData = gson.fromJson(rootElement.getAsJsonObject().getAsJsonObject(API_RESPONSE_ROOT)
@@ -228,9 +223,7 @@ public class TradeUser {
 
             data.add(new BasicNameValuePair(RSATIMESTAMP_PARAM, rsaKeyResponse.timestamp));
             String response = this.doCommunityCall("https://steamcommunity.com/login/dologin/", HttpMethod.POST, data, false);
-            if (LOG.isDebugEnabled()) {
-                LOG.debug(MessageFormat.format("[/login/dologin] response = [{0}]", response));
-            }
+            LOG.debug(MessageFormat.format("[/login/dologin] response = [{0}]", response));
             this.loginJson = gson.fromJson(response, CEconLoginResponse.class);
 
             if (loginJson.captchaNeeded) {
@@ -291,9 +284,7 @@ public class TradeUser {
         Gson gson = this.getGson();
         data.add(new BasicNameValuePair(USERNAME_PARAM, username));
         String response = this.doCommunityCall("https://steamcommunity.com/login/getrsakey", HttpMethod.POST, data, false);
-        if (LOG.isDebugEnabled()) {
-            LOG.debug(MessageFormat.format("[/login/getrsakey] response = [{0}]", response));
-        }
+        LOG.debug(MessageFormat.format("[/login/getrsakey] response = [{0}]", response));
         CEconRsaKeyResponse rsaKeyResponse = gson.fromJson(response, CEconRsaKeyResponse.class);
         if (!rsaKeyResponse.success) {
             throw new IEconServiceException("Unsuccess response to [/login/getrsakey]");
@@ -318,15 +309,11 @@ public class TradeUser {
                     for (Map.Entry<String, String> param : params.entrySet()) {
                         builder.setParameter(param.getKey(), param.getValue());
                     }
-                    if (LOG.isDebugEnabled()) {
-                        LOG.debug(MessageFormat.format("API GET-request: URL = [{0}]", builder.build()));
-                    }
+                    LOG.debug(MessageFormat.format("API GET-request: URL = [{0}]", builder.build()));
                     return IOUtils.toString(request(builder.build().toString(), HttpMethod.GET, null, null).getEntity().getContent());
                 case POST:
                     List<NameValuePair> data = params.entrySet().stream().map(param -> new BasicNameValuePair(param.getKey(), param.getValue())).collect(Collectors.toList());
-                    if (LOG.isDebugEnabled()) {
-                        LOG.debug(MessageFormat.format("API POST-request: URL = [{0}], DATA = [{1}]", builder.build(), data));
-                    }
+                    LOG.debug(MessageFormat.format("API POST-request: URL = [{0}], DATA = [{1}]", builder.build(), data));
                     return IOUtils.toString(request(builder.build().toString(), HttpMethod.POST, data, null).getEntity().getContent());
                 default:
                     throw new IllegalArgumentException("Undefined http method");
@@ -362,9 +349,7 @@ public class TradeUser {
             }
 
             HttpResponse response = this.request(url, httpMethod, data, headers);
-            if (LOG.isDebugEnabled()) {
-                LOG.debug(MessageFormat.format("Community request: URL = [{0}], HEADES = [{1}]", url, headers));
-            }
+            LOG.debug(MessageFormat.format("Community request: URL = [{0}], HEADES = [{1}]", url, headers));
             return IOUtils.toString(response.getEntity().getContent());
         } catch (IOException e) {
             throw new IEconServiceException("IOException while doing http request to [steamcommunity.com]", e);
@@ -494,7 +479,7 @@ public class TradeUser {
         private String emailSteamID;
 
         @SerializedName("transfer_parameters")
-        private HashMap<String, String> transferParameters;
+        private Map<String, String> transferParameters = new HashMap<>();
 
         @SerializedName("transfer_url")
         private String transferURL;
