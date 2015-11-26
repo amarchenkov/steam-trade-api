@@ -18,6 +18,7 @@ public class SteamTradeTest {
         TradeOffer tradeOffer = steamTrade.makeOffer(new SteamID(76561198057626189L));
         List<CEconAsset> myInv = tradeOffer.getMyInventory(EAppID.STEAM, EContextID.COMMUNITY);
         List<CEconAsset> themInv = tradeOffer.getTheirInventory(EAppID.DOTA2, EContextID.BACKPACK);
+        float a = themInv.get(0).getAssetPrice();
         tradeOffer.addItemsToReceive(themInv.get(0));
         tradeOffer.send();
 

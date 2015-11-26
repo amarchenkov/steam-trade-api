@@ -88,10 +88,15 @@ public class TradeUser {
     private CEconLoginResponse loginJson;
     private boolean isAuthorized;
 
-    private TradeUser(String webApiKey) {
-        this.webApiKey = webApiKey;
+
+    TradeUser() {
         this.httpClient = HttpClients.custom().setDefaultCookieStore(cookieStore).build();
         this.isAuthorized = false;
+    }
+
+    private TradeUser(String webApiKey) {
+        this();
+        this.webApiKey = webApiKey;
     }
 
     public TradeUser(String webApiKey, String username, String password) throws IEconServiceException {
