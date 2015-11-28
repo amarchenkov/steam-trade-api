@@ -7,6 +7,7 @@ package com.github.steam.api.enumeration;
  */
 public enum EContextID {
 
+    ALL(0, "All items"),
     GIFT(1, "Gift"),
     BACKPACK(2, "Backpack"),
     COUPON(3, "Coupon"),
