@@ -26,6 +26,7 @@ public class InventoryAdapter implements JsonDeserializer<List<CEconAsset>>, Jso
     }
 
     @Override
+    //TODO Не добавлять в список предмены не разрешенные к обмену
     public List<CEconAsset> deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
         final List<CEconAsset> result = new ArrayList<>();
         if (jsonElement.getAsJsonObject().getAsJsonPrimitive("success").getAsString().equals("false")) {
