@@ -173,9 +173,9 @@ public class TradeUser {
      *
      * @param partner Идентификатор пользователя, кому предназначено предложение
      * @return SteamTrade - экземпляр
-     * @throws Exception
+     * @throws IEconServiceException
      */
-    public TradeOffer makeOffer(SteamID partner) throws Exception {
+    public TradeOffer makeOffer(SteamID partner) throws IEconServiceException {
         return new TradeOffer(this, partner);
     }
 
