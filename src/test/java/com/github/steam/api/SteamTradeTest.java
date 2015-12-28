@@ -2,6 +2,7 @@ package com.github.steam.api;
 
 import com.github.steam.api.enumeration.EAppID;
 import com.github.steam.api.enumeration.EContextID;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.List;
@@ -9,6 +10,7 @@ import java.util.List;
 public class SteamTradeTest {
 
     @Test
+    @Ignore
     public void getTradeOffersTest() throws Exception {
         TradeUser.addCookie("steamMachineAuth76561198010004566", "F967A27C49B8E32AB167F9734F0788A7E567A9C2", true);
         TradeUser.addCookie("steamLogin", "76561198010004566%7C%7C88C481E356B5916C01841DEC86618355C128308F", false);
