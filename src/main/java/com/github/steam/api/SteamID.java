@@ -1,6 +1,8 @@
 package com.github.steam.api;
 
-public class SteamID {
+import java.io.Serializable;
+
+public class SteamID implements Serializable {
 
     private long communityId;
 
