@@ -1,17 +1,36 @@
 Steam Trade API
 ===========================================================
 
+Библиотека для обмена предметам через Steam.
+Использует как официальный API, так и не совсем официальный(CSRF)
+
+Описание методов есть в коде в виде JavaDoc
+
+Пример:
+
 ```java
-ETradeUser steamTrade = new ETradeUser("webKey");
+//Установить куки чтобы не требовался пароль от SteamGuard
+TradeUser.addCookie("steamMachineAuth76561198010004566", "", true);
+TradeUser.addCookie("steamLogin", "", false);
+TradeUser.addCookie("steamLoginSecure", "", false);
+TradeUser.addCookie("steamCountry", "", false);
 
-steamTrade.addCookie("steamMachineAuth76561198010004566", "F967A27C49B8E32AB167F9734F0788A7E567A9C2", true);
-steamTrade.addCookie("steamLogin", "76561198010004566%7C%7C88C481E356B5916C01841DEC86618355C128308F", false);
-steamTrade.addCookie("steamLoginSecure", "76561198010004566%7C%7CA531C654837F1905C6586C73765B8477A874552B", false);
-steamTrade.addCookie("steamCountry", "RU%7C90d44fe7e18a9d857b0d0918d25f5734", false);
+//Создать обект-пользователь, выполнить залогинивание в steamcommunity
+TradeUser steamTrade = new TradeUser("WEBKEY", "Login", "Password");
 
-ETradeUserState state = steamTrade.login("login", "pswd");
+//Создать предложение обмена
+TradeOffer tradeOffer = steamTrade.makeOffer(new SteamID(1L));
 
-ETradeOffer tradeOffer = steamTrade.makeOffer(new SteamID(76561198057626189L));
-CEconInventory myInv = tradeOffer.getTradeStatus().getThem().fetchInventory(570, 2);
-CEconInventory theirInv = tradeOffer.getTradeStatus().getMe().fetchInventory(570, 2);
+//Свой инвентарь
+List<CEconAsset> myInv = tradeOffer.getMyInventory(EAppID.STEAM, EContextID.COMMUNITY);
+
+//Инвентарь партнера
+List<CEconAsset> themInv = tradeOffer.getTheirInventory(EAppID.DOTA2, EContextID.BACKPACK);
+
+//Полчить цену предмета
+float a = themInv.get(1).getAssetPrice();
+
+//Добавить элемент для отправки партнеру
+tradeOffer.addItemsToReceive(themInv.get(1));
+tradeOffer.send();
 ```
